@@ -10,6 +10,9 @@ pub use equivalent::{Comparable, Equivalent};
 
 mod exit_guard;
 
+pub mod atom;
+pub use atom::Atom;
+
 pub mod hash_cache;
 pub use hash_cache::HashCache;
 
@@ -66,6 +69,7 @@ mod range_helper {
 }
 
 /// Re-exports the [`sdd`](https://crates.io/crates/sdd) crate for backward compatibility.
+pub use sdd;
 pub use sdd as ebr;
 
 #[cfg(feature = "serde")]
