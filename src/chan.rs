@@ -24,12 +24,18 @@ unsafe impl<T> Send for ChanInner<T> {}
 unsafe impl<T> Sync for ChanInner<T> {}
 
 /// (Experimental) Multi-producer, multi-consumer FIFO channel.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Chan<T>(
     Arc<ChanInner<T>>
 );
 unsafe impl<T> Send for Chan<T> {}
 unsafe impl<T> Sync for Chan<T> {}
+
+impl<T> Clone for Chan<T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
 
 /// Error type for Chan
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -89,7 +95,7 @@ impl<T> Chan<T> {
 
     /// get the current length of channel.
     pub fn len(&self) -> usize {
-        self.0.len.load(Relaxed)
+        self.0.len.load(Acquire)
     }
 
     /// checks whether this channel closed.
@@ -109,6 +115,18 @@ impl<T> Chan<T> {
             return Err(ChanError::Closed);
         }
         if let Some(mut shared) = self.0.msg.pop() {
+            let _ = self.0.len.fetch_update(
+                Acquire,
+                Acquire,
+                |l| {
+                    if l > 0 {
+                        Some(l - 1)
+                    } else {
+                        None
+                    }
+                }
+            );
+
             if let Some(entry) = unsafe { shared.get_mut() } {
                 Ok(unsafe { entry.take_inner() })
             } else {
@@ -120,6 +138,11 @@ impl<T> Chan<T> {
         } else {
             Err(ChanError::Empty)
         }
+    }
+
+    /// Asynchronous receive message from this channel
+    pub fn recv(&self) -> ChanRecv<T> {
+        ChanRecv(self.clone())
     }
 
     /// send message but does not checking the lifetime of T.
@@ -135,6 +158,31 @@ impl<T> Chan<T> {
         unsafe { self.0.msg.push_unchecked(val); }
         self.0.len.fetch_add(1, Acquire);
         Ok(())
+    }
+}
+
+/// Chan::recv() returns this type that implements [`core::future::Future`] for awaiting
+pub struct ChanRecv<T>(
+    Chan<T>
+);
+impl<T> core::future::Future for ChanRecv<T> {
+    type Output = Result<T, ChanError>;
+
+    fn poll(
+        self: core::pin::Pin<&mut Self>,
+        _ctx: &mut core::task::Context<'_>
+    ) -> core::task::Poll<Self::Output> {
+        use core::task::Poll;
+        match self.0.try_recv() {
+            Ok(msg) => Poll::Ready(Ok(msg)),
+            Err(err) => {
+                if err == ChanError::Empty {
+                    Poll::Pending
+                } else {
+                    Poll::Ready(Err(err))
+                }
+            }
+        }
     }
 }
 
