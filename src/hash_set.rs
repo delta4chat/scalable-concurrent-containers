@@ -30,7 +30,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     /// use std::collections::hash_map::RandomState;
     ///
     /// let hashset: HashSet<u64, RandomState> = HashSet::with_hasher(RandomState::new());
@@ -59,7 +59,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     /// use std::collections::hash_map::RandomState;
     ///
     /// let hashset: HashSet<u64, RandomState> =
@@ -97,7 +97,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<usize> = HashSet::with_capacity(1000);
     /// assert_eq!(hashset.capacity(), 1024);
@@ -130,7 +130,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///
@@ -157,7 +157,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     /// let future_insert = hashset.insert_async(11);
@@ -174,7 +174,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///
@@ -198,7 +198,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     /// let future_insert = hashset.insert_async(11);
@@ -222,7 +222,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///
@@ -246,7 +246,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     /// let future_insert = hashset.insert_async(11);
@@ -270,7 +270,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///
@@ -294,7 +294,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     /// let future_insert = hashset.insert_async(11);
@@ -313,7 +313,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///
@@ -336,7 +336,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///
@@ -359,7 +359,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<usize> = HashSet::default();
     ///
@@ -384,7 +384,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<usize> = HashSet::default();
     ///
@@ -407,7 +407,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///
@@ -436,7 +436,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///
@@ -457,7 +457,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///
@@ -487,7 +487,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///
@@ -504,7 +504,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///
@@ -525,7 +525,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///
@@ -546,7 +546,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///
@@ -563,7 +563,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///
@@ -581,7 +581,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset_default: HashSet<u64> = HashSet::default();
     /// assert_eq!(hashset_default.capacity(), 0);
@@ -602,7 +602,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///
@@ -624,7 +624,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::with_capacity(1024);
     ///
@@ -674,7 +674,7 @@ impl<K: Eq + Hash> HashSet<K, RandomState> {
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::new();
     ///
@@ -694,7 +694,7 @@ impl<K: Eq + Hash> HashSet<K, RandomState> {
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::with_capacity(1000);
     ///
@@ -721,7 +721,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashSet;
+    /// use scc2::HashSet;
     ///
     /// let hashset: HashSet<u64> = HashSet::default();
     ///

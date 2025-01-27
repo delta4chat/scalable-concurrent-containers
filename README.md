@@ -48,7 +48,7 @@ Resizing of a [`HashMap`](#hashmap) is entirely non-blocking and lock-free; resi
 If the key is unique, an entry can be inserted. The inserted entry can be updated, read, and removed synchronously or asynchronously.
 
 ```rust
-use scc::HashMap;
+use scc2::HashMap;
 
 let hashmap: HashMap<u64, u32> = HashMap::default();
 
@@ -69,7 +69,7 @@ let future_remove = hashmap.remove_async(&1);
 The `Entry` API of [`HashMap`](#hashmap) is helpful if the workflow is complicated.
 
 ```rust
-use scc::HashMap;
+use scc2::HashMap;
 
 let hashmap: HashMap<u64, u32> = HashMap::default();
 
@@ -83,7 +83,7 @@ assert_eq!(hashmap.read(&4, |_, v| *v), Some(5));
 [`HashMap`](#hashmap) does not provide an [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html) since it is impossible to confine the lifetime of [`Iterator::Item`](https://doc.rust-lang.org/std/iter/trait.Iterator.html#associatedtype.Item) to the [Iterator](https://doc.rust-lang.org/std/iter/trait.Iterator.html). The limitation can be circumvented by relying on interior mutability, e.g., letting the returned reference hold a lock. However, it may lead to a deadlock if not correctly used, and frequent acquisition of locks may impact performance. Therefore, [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html) is not implemented; instead, [`HashMap`](#hashmap) provides several methods to iterate over entries synchronously or asynchronously: `any`, `any_async`, `first_entry`, `first_entry_async`, `prune`, `prune_async`, `retain`, `retain_async`, `scan`, `scan_async`, `OccupiedEntry::next`, and `OccupiedEntry::next_async`.
 
 ```rust
-use scc::HashMap;
+use scc2::HashMap;
 
 let hashmap: HashMap<u64, u32> = HashMap::default();
 
@@ -140,7 +140,7 @@ assert!(is_send(&future_iter));
 Most [`HashSet`](#hashset) methods are identical to that of [`HashMap`](#hashmap) except that they do not receive a value argument, and some [`HashMap`](#hashmap) methods for value modification are not implemented for [`HashSet`](#hashset).
 
 ```rust
-use scc::HashSet;
+use scc2::HashSet;
 
 let hashset: HashSet<u64> = HashSet::default();
 
@@ -171,7 +171,7 @@ Those conditions do not guarantee that the removed entry will be dropped within 
 The `peek` and `peek_with` methods are completely lock-free.
 
 ```rust
-use scc::HashIndex;
+use scc2::HashIndex;
 
 let hashindex: HashIndex<u64, u32> = HashIndex::default();
 
@@ -187,7 +187,7 @@ let future_remove = hashindex.remove_if_async(&1, |_| true);
 The `Entry` API of [`HashIndex`](#hashindex) can update an existing entry.
 
 ```rust
-use scc::HashIndex;
+use scc2::HashIndex;
 
 let hashindex: HashIndex<u64, u32> = HashIndex::default();
 assert!(hashindex.insert(1, 1).is_ok());
@@ -206,8 +206,8 @@ if let Some(mut o) = hashindex.get(&1) {
 An [`Iterator`](https://doc.rust-lang.org/std/iter/trait.Iterator.html) is implemented for [`HashIndex`](#hashindex) because any derived references can survive as long as the associated `ebr::Guard` lives.
 
 ```rust
-use scc::ebr::Guard;
-use scc::HashIndex;
+use scc2::ebr::Guard;
+use scc2::HashIndex;
 
 let hashindex: HashIndex<u64, u32> = HashIndex::default();
 
@@ -240,7 +240,7 @@ assert_eq!(entry_ref, (&1, &1));
 The LRU entry in a bucket is evicted when a new entry is inserted, and the bucket is full.
 
 ```rust
-use scc::HashCache;
+use scc2::HashCache;
 
 let hashcache: HashCache<u64, u32> = HashCache::with_capacity(100, 2000);
 
@@ -275,7 +275,7 @@ Read access is always lock-free and non-blocking. Write access to an entry is lo
 If the key is unique, an entry can be inserted, read, and removed afterward. Locks are acquired or awaited only when internal nodes are split or merged.
 
 ```rust
-use scc::TreeIndex;
+use scc2::TreeIndex;
 
 let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
 
@@ -292,7 +292,7 @@ let future_remove = treeindex.remove_if_async(&1, |v| *v == 2);
 Entries can be scanned without acquiring any locks.
 
 ```rust
-use scc::TreeIndex;
+use scc2::TreeIndex;
 use sdd::Guard;
 
 let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
@@ -314,8 +314,8 @@ assert!(iter.next().is_none());
 A specific range of keys can be scanned.
 
 ```rust
-use scc::ebr::Guard;
-use scc::TreeIndex;
+use scc2::ebr::Guard;
+use scc2::TreeIndex;
 
 let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
 
@@ -337,7 +337,7 @@ assert_eq!(treeindex.range(4..=8, &guard).count(), 5);
 ### Examples
 
 ```rust
-use scc::Bag;
+use scc2::Bag;
 
 let bag: Bag<usize> = Bag::default();
 
@@ -354,7 +354,7 @@ assert!(bag.is_empty());
 ### Examples
 
 ```rust
-use scc::Queue;
+use scc2::Queue;
 
 let queue: Queue<usize> = Queue::default();
 
@@ -373,7 +373,7 @@ assert!(queue.pop().is_none());
 ### Examples
 
 ```rust
-use scc::Stack;
+use scc2::Stack;
 
 let stack: Stack<usize> = Stack::default();
 
@@ -391,8 +391,8 @@ assert!(stack.pop().is_none());
 ### Examples
 
 ```rust
-use scc::ebr::{AtomicShared, Guard, Shared};
-use scc::LinkedList;
+use scc2::ebr::{AtomicShared, Guard, Shared};
+use scc2::LinkedList;
 use std::sync::atomic::Ordering::Relaxed;
 
 #[derive(Default)]

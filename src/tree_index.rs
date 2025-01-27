@@ -85,7 +85,7 @@ impl<K, V> TreeIndex<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
     /// ```
@@ -113,7 +113,7 @@ impl<K, V> TreeIndex<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
     ///
@@ -132,7 +132,7 @@ impl<K, V> TreeIndex<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
     /// assert_eq!(treeindex.depth(), 0);
@@ -161,7 +161,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
     ///
@@ -232,7 +232,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
     /// let future_insert = treeindex.insert_async(1, 10);
@@ -312,7 +312,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
     ///
@@ -339,7 +339,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
     /// let future_remove = treeindex.remove_async(&1);
@@ -362,7 +362,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
     ///
@@ -422,7 +422,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
     /// let future_remove = treeindex.remove_if_async(&1, |v| *v == 0);
@@ -493,7 +493,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
     ///
@@ -544,7 +544,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
     ///
@@ -603,9 +603,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::ebr::Guard;
+    /// use scc2::ebr::Guard;
     /// use std::sync::Arc;
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<Arc<str>, u32> = TreeIndex::new();
     ///
@@ -633,7 +633,7 @@ where
     ///
     /// ```
     /// use std::sync::Arc;
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<Arc<str>, u32> = TreeIndex::new();
     ///
@@ -662,9 +662,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::ebr::Guard;
+    /// use scc2::ebr::Guard;
     /// use std::sync::Arc;
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<Arc<str>, u32> = TreeIndex::new();
     ///
@@ -694,7 +694,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::default();
     ///
@@ -717,7 +717,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
     /// assert_eq!(treeindex.len(), 0);
@@ -733,7 +733,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
     ///
@@ -755,8 +755,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
-    /// use scc::ebr::Guard;
+    /// use scc2::TreeIndex;
+    /// use scc2::ebr::Guard;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
     ///
@@ -778,8 +778,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
-    /// use scc::ebr::Guard;
+    /// use scc2::TreeIndex;
+    /// use scc2::ebr::Guard;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::new();
     ///
@@ -832,7 +832,7 @@ impl<K, V> Default for TreeIndex<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use scc::TreeIndex;
+    /// use scc2::TreeIndex;
     ///
     /// let treeindex: TreeIndex<u64, u32> = TreeIndex::default();
     /// ```

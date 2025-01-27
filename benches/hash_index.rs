@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use scc::ebr::Guard;
-use scc::HashIndex;
+use scc2::ebr::Guard;
+use scc2::HashIndex;
 use std::time::Instant;
 
 fn iter_with(c: &mut Criterion) {

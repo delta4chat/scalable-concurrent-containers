@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod examples {
-    use scc::Bag;
+    use scc2::Bag;
 
     #[test]
     fn single_threaded() {

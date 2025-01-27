@@ -125,7 +125,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     /// use std::collections::hash_map::RandomState;
     ///
     /// let hashmap: HashMap<u64, u32, RandomState> = HashMap::with_hasher(RandomState::new());
@@ -158,7 +158,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     /// use std::collections::hash_map::RandomState;
     ///
     /// let hashmap: HashMap<u64, u32, RandomState> =
@@ -213,7 +213,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<usize, usize> = HashMap::with_capacity(1000);
     /// assert_eq!(hashmap.capacity(), 1024);
@@ -250,7 +250,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<char, u32> = HashMap::default();
     ///
@@ -293,7 +293,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<char, u32> = HashMap::default();
     ///
@@ -339,7 +339,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -374,7 +374,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<char, u32> = HashMap::default();
     ///
@@ -399,7 +399,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -430,7 +430,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -465,7 +465,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -494,7 +494,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     /// let future_insert = hashmap.insert_async(11, 17);
@@ -524,7 +524,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -551,7 +551,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     /// let future_upsert = hashmap.upsert_async(11, 17);
@@ -574,7 +574,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -611,7 +611,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -652,7 +652,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -676,7 +676,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     /// let future_insert = hashmap.insert_async(11, 17);
@@ -697,7 +697,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -730,7 +730,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     /// let future_insert = hashmap.insert_async(11, 17);
@@ -774,7 +774,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -817,7 +817,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     /// let future_insert = hashmap.insert_async(11, 17);
@@ -857,7 +857,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -884,7 +884,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     /// let future_insert = hashmap.insert_async(11, 17);
@@ -911,7 +911,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -934,7 +934,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -957,7 +957,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<usize, usize> = HashMap::default();
     ///
@@ -985,7 +985,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<usize, usize> = HashMap::default();
     ///
@@ -1012,7 +1012,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1041,7 +1041,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1105,7 +1105,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1137,7 +1137,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1205,7 +1205,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, String> = HashMap::default();
     ///
@@ -1235,7 +1235,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1299,7 +1299,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1320,7 +1320,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1341,7 +1341,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1358,7 +1358,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1376,7 +1376,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap_default: HashMap<u64, u32> = HashMap::default();
     /// assert_eq!(hashmap_default.capacity(), 0);
@@ -1397,7 +1397,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1419,7 +1419,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::with_capacity(1024);
     ///
@@ -1461,7 +1461,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::new();
     ///
@@ -1481,7 +1481,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::with_capacity(1000);
     ///
@@ -1542,7 +1542,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1630,7 +1630,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1647,7 +1647,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1667,7 +1667,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1693,7 +1693,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     /// assert_eq!(hashmap.entry(31).key(), &31);
@@ -1711,7 +1711,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1741,7 +1741,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     /// let entry = hashmap.entry(11).insert_entry(17);
@@ -1770,7 +1770,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     /// hashmap.entry(11).or_default();
@@ -1810,7 +1810,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1831,8 +1831,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
-    /// use scc::hash_map::Entry;
+    /// use scc2::HashMap;
+    /// use scc2::hash_map::Entry;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1871,8 +1871,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
-    /// use scc::hash_map::Entry;
+    /// use scc2::HashMap;
+    /// use scc2::hash_map::Entry;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1897,8 +1897,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
-    /// use scc::hash_map::Entry;
+    /// use scc2::HashMap;
+    /// use scc2::hash_map::Entry;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1928,8 +1928,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
-    /// use scc::hash_map::Entry;
+    /// use scc2::HashMap;
+    /// use scc2::hash_map::Entry;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1951,8 +1951,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
-    /// use scc::hash_map::Entry;
+    /// use scc2::HashMap;
+    /// use scc2::hash_map::Entry;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -1978,8 +1978,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
-    /// use scc::hash_map::Entry;
+    /// use scc2::HashMap;
+    /// use scc2::hash_map::Entry;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -2019,8 +2019,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
-    /// use scc::hash_map::Entry;
+    /// use scc2::HashMap;
+    /// use scc2::hash_map::Entry;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -2091,7 +2091,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
+    /// use scc2::HashMap;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     /// assert_eq!(hashmap.entry(11).key(), &11);
@@ -2106,8 +2106,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
-    /// use scc::hash_map::Entry;
+    /// use scc2::HashMap;
+    /// use scc2::hash_map::Entry;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///
@@ -2125,8 +2125,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashMap;
-    /// use scc::hash_map::Entry;
+    /// use scc2::HashMap;
+    /// use scc2::hash_map::Entry;
     ///
     /// let hashmap: HashMap<u64, u32> = HashMap::default();
     ///

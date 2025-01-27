@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod examples {
-    use scc::Stack;
+    use scc2::Stack;
 
     #[test]
     fn single_threaded() {

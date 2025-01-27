@@ -74,7 +74,7 @@ impl<T, const ARRAY_LEN: usize> Bag<T, ARRAY_LEN> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Bag;
+    /// use scc2::Bag;
     ///
     /// let bag: Bag<usize, 16> = Bag::new();
     /// ```
@@ -93,7 +93,7 @@ impl<T, const ARRAY_LEN: usize> Bag<T, ARRAY_LEN> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Bag;
+    /// use scc2::Bag;
     ///
     /// let bag: Bag<usize> = Bag::default();
     ///
@@ -123,7 +123,7 @@ impl<T, const ARRAY_LEN: usize> Bag<T, ARRAY_LEN> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Bag;
+    /// use scc2::Bag;
     ///
     /// let bag: Bag<usize> = Bag::default();
     ///
@@ -156,7 +156,7 @@ impl<T, const ARRAY_LEN: usize> Bag<T, ARRAY_LEN> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Bag;
+    /// use scc2::Bag;
     ///
     /// let bag: Bag<usize> = Bag::default();
     ///
@@ -189,7 +189,7 @@ impl<T, const ARRAY_LEN: usize> Bag<T, ARRAY_LEN> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Bag;
+    /// use scc2::Bag;
     ///
     /// let bag: Bag<usize> = Bag::default();
     /// assert_eq!(bag.len(), 0);
@@ -217,7 +217,7 @@ impl<T, const ARRAY_LEN: usize> Bag<T, ARRAY_LEN> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Bag;
+    /// use scc2::Bag;
     ///
     /// let bag: Bag<usize> = Bag::default();
     /// assert!(bag.is_empty());
@@ -242,7 +242,7 @@ impl<T, const ARRAY_LEN: usize> Bag<T, ARRAY_LEN> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Bag;
+    /// use scc2::Bag;
     ///
     /// let mut bag: Bag<usize> = Bag::default();
     ///

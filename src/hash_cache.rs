@@ -92,7 +92,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     /// use std::collections::hash_map::RandomState;
     ///
     /// let hashcache: HashCache<u64, u32, RandomState> = HashCache::with_hasher(RandomState::new());
@@ -127,7 +127,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     /// use std::collections::hash_map::RandomState;
     ///
     /// let hashcache: HashCache<u64, u32, RandomState> =
@@ -181,7 +181,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<char, u32> = HashCache::default();
     ///
@@ -225,7 +225,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<char, u32> = HashCache::default();
     ///
@@ -275,7 +275,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -323,7 +323,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     /// let future_put = hashcache.put_async(11, 17);
@@ -371,7 +371,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -415,7 +415,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     /// let future_put = hashcache.put_async(11, 17);
@@ -456,7 +456,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -483,7 +483,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     /// let future_put = hashcache.put_async(11, 17);
@@ -510,7 +510,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -533,7 +533,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -554,7 +554,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -578,7 +578,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     /// let future_put = hashcache.put_async(11, 17);
@@ -599,7 +599,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -629,7 +629,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     /// let future_put = hashcache.put_async(11, 17);
@@ -663,7 +663,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<usize, usize> = HashCache::default();
     ///
@@ -710,7 +710,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<usize, usize> = HashCache::default();
     ///
@@ -769,7 +769,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -798,7 +798,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -862,7 +862,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -895,7 +895,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -956,7 +956,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -977,7 +977,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -998,7 +998,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -1015,7 +1015,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -1033,7 +1033,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache_default: HashCache<u64, u32> = HashCache::default();
     /// assert_eq!(hashcache_default.capacity(), 0);
@@ -1051,7 +1051,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -1094,7 +1094,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::new();
     ///
@@ -1115,7 +1115,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::with_capacity(1000, 2000);
     ///
@@ -1140,7 +1140,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -1250,7 +1250,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -1267,7 +1267,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -1290,7 +1290,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -1316,7 +1316,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     /// assert_eq!(hashcache.entry(31).key(), &31);
@@ -1334,7 +1334,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -1364,7 +1364,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     /// let entry = hashcache.entry(11).put_entry(17).1;
@@ -1393,7 +1393,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     /// hashcache.entry(11).or_default();
@@ -1433,7 +1433,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -1454,8 +1454,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
-    /// use scc::hash_cache::Entry;
+    /// use scc2::HashCache;
+    /// use scc2::hash_cache::Entry;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -1494,8 +1494,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
-    /// use scc::hash_cache::Entry;
+    /// use scc2::HashCache;
+    /// use scc2::hash_cache::Entry;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -1520,8 +1520,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
-    /// use scc::hash_cache::Entry;
+    /// use scc2::HashCache;
+    /// use scc2::hash_cache::Entry;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -1551,8 +1551,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
-    /// use scc::hash_cache::Entry;
+    /// use scc2::HashCache;
+    /// use scc2::hash_cache::Entry;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -1574,8 +1574,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
-    /// use scc::hash_cache::Entry;
+    /// use scc2::HashCache;
+    /// use scc2::hash_cache::Entry;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -1641,7 +1641,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
+    /// use scc2::HashCache;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     /// assert_eq!(hashcache.entry(11).key(), &11);
@@ -1656,8 +1656,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
-    /// use scc::hash_cache::Entry;
+    /// use scc2::HashCache;
+    /// use scc2::hash_cache::Entry;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///
@@ -1677,8 +1677,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashCache;
-    /// use scc::hash_cache::Entry;
+    /// use scc2::HashCache;
+    /// use scc2::hash_cache::Entry;
     ///
     /// let hashcache: HashCache<u64, u32> = HashCache::default();
     ///

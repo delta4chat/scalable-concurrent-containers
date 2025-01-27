@@ -28,7 +28,7 @@ impl<T: 'static> Stack<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Stack;
+    /// use scc2::Stack;
     ///
     /// let stack: Stack<usize> = Stack::default();
     ///
@@ -53,7 +53,7 @@ impl<T: 'static> Stack<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Stack;
+    /// use scc2::Stack;
     ///
     /// let stack: Stack<usize> = Stack::default();
     ///
@@ -79,8 +79,8 @@ impl<T: 'static> Stack<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::ebr::Guard;
-    /// use scc::Stack;
+    /// use scc2::ebr::Guard;
+    /// use scc2::Stack;
     ///
     /// let stack: Stack<usize> = Stack::default();
     ///
@@ -111,7 +111,7 @@ impl<T> Stack<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Stack;
+    /// use scc2::Stack;
     ///
     /// let hello = String::from("hello");
     /// let stack: Stack<&str> = Stack::default();
@@ -143,7 +143,7 @@ impl<T> Stack<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Stack;
+    /// use scc2::Stack;
     ///
     /// let hello = String::from("hello");
     /// let stack: Stack<&str> = Stack::default();
@@ -166,7 +166,7 @@ impl<T> Stack<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Stack;
+    /// use scc2::Stack;
     ///
     /// let stack: Stack<usize> = Stack::default();
     ///
@@ -193,7 +193,7 @@ impl<T> Stack<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Stack;
+    /// use scc2::Stack;
     ///
     /// let stack: Stack<usize> = Stack::default();
     ///
@@ -232,7 +232,7 @@ impl<T> Stack<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Stack;
+    /// use scc2::Stack;
     ///
     /// let stack: Stack<usize> = Stack::default();
     ///
@@ -272,7 +272,7 @@ impl<T> Stack<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Stack;
+    /// use scc2::Stack;
     ///
     /// let stack: Stack<usize> = Stack::default();
     ///
@@ -300,7 +300,7 @@ impl<T> Stack<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Stack;
+    /// use scc2::Stack;
     ///
     /// let stack: Stack<usize> = Stack::default();
     /// assert_eq!(stack.len(), 0);
@@ -323,7 +323,7 @@ impl<T> Stack<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Stack;
+    /// use scc2::Stack;
     ///
     /// let stack: Stack<usize> = Stack::default();
     /// assert!(stack.is_empty());
@@ -343,8 +343,8 @@ impl<T> Stack<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::ebr::Guard;
-    /// use scc::Stack;
+    /// use scc2::ebr::Guard;
+    /// use scc2::Stack;
     ///
     /// let stack: Stack<usize> = Stack::default();
     /// assert_eq!(stack.iter(&Guard::new()).count(), 0);

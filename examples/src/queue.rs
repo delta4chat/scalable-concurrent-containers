@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod examples {
-    use scc::Queue;
+    use scc2::Queue;
 
     #[test]
     fn single_threaded() {

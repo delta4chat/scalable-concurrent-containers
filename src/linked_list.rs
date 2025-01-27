@@ -17,8 +17,8 @@ pub trait LinkedList: Sized {
     /// # Examples
     ///
     /// ```
-    /// use scc::LinkedList;
-    /// use scc::ebr::{AtomicShared, Tag};
+    /// use scc2::LinkedList;
+    /// use scc2::ebr::{AtomicShared, Tag};
     /// use std::sync::atomic::Ordering::Relaxed;
     ///
     /// #[derive(Default)]
@@ -48,8 +48,8 @@ pub trait LinkedList: Sized {
     /// # Examples
     ///
     /// ```
-    /// use scc::LinkedList;
-    /// use scc::ebr::AtomicShared;
+    /// use scc2::LinkedList;
+    /// use scc2::ebr::AtomicShared;
     /// use std::sync::atomic::Ordering::Relaxed;
     ///
     /// #[derive(Default)]
@@ -76,8 +76,8 @@ pub trait LinkedList: Sized {
     /// # Examples
     ///
     /// ```
-    /// use scc::LinkedList;
-    /// use scc::ebr::AtomicShared;
+    /// use scc2::LinkedList;
+    /// use scc2::ebr::AtomicShared;
     /// use std::sync::atomic::Ordering::Relaxed;
     ///
     /// #[derive(Default)]
@@ -105,8 +105,8 @@ pub trait LinkedList: Sized {
     /// # Examples
     ///
     /// ```
-    /// use scc::LinkedList;
-    /// use scc::ebr::AtomicShared;
+    /// use scc2::LinkedList;
+    /// use scc2::ebr::AtomicShared;
     /// use std::sync::atomic::Ordering::Relaxed;
     ///
     /// #[derive(Default)]
@@ -134,8 +134,8 @@ pub trait LinkedList: Sized {
     /// # Examples
     ///
     /// ```
-    /// use scc::LinkedList;
-    /// use scc::ebr::{AtomicShared, Guard, Shared};
+    /// use scc2::LinkedList;
+    /// use scc2::ebr::{AtomicShared, Guard, Shared};
     /// use std::sync::atomic::Ordering::Relaxed;
     ///
     /// #[derive(Default)]
@@ -173,8 +173,8 @@ pub trait LinkedList: Sized {
     /// # Examples
     ///
     /// ```
-    /// use scc::LinkedList;
-    /// use scc::ebr::AtomicShared;
+    /// use scc2::LinkedList;
+    /// use scc2::ebr::AtomicShared;
     /// use std::sync::atomic::Ordering::Relaxed;
     ///
     /// #[derive(Default)]
@@ -208,8 +208,8 @@ pub trait LinkedList: Sized {
     /// # Examples
     ///
     /// ```
-    /// use scc::LinkedList;
-    /// use scc::ebr::{AtomicShared, Guard, Shared};
+    /// use scc2::LinkedList;
+    /// use scc2::ebr::{AtomicShared, Guard, Shared};
     /// use std::sync::atomic::Ordering::{Relaxed, Release};
     ///
     /// #[derive(Default)]
@@ -280,8 +280,8 @@ pub trait LinkedList: Sized {
     /// # Examples
     ///
     /// ```
-    /// use scc::LinkedList;
-    /// use scc::ebr::{AtomicShared, Guard, Shared};
+    /// use scc2::LinkedList;
+    /// use scc2::ebr::{AtomicShared, Guard, Shared};
     /// use std::sync::atomic::Ordering::{Acquire, Relaxed, Release};
     ///
     /// #[derive(Default)]
@@ -315,8 +315,8 @@ pub trait LinkedList: Sized {
     /// # Examples
     ///
     /// ```
-    /// use scc::LinkedList;
-    /// use scc::ebr::{AtomicShared, Guard, Shared};
+    /// use scc2::LinkedList;
+    /// use scc2::ebr::{AtomicShared, Guard, Shared};
     /// use std::sync::atomic::Ordering::{Acquire, Relaxed, Release};
     ///
     /// #[derive(Default)]
@@ -374,7 +374,7 @@ impl<T> Entry<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Stack;
+    /// use scc2::Stack;
     ///
     /// let stack: Stack<usize> = Stack::default();
     ///

@@ -231,7 +231,7 @@
 * Remove `HashMap::upsert*`: superseded by `hash_map::Entry::and_modify` and `hash_map::Entry::or_insert`.
 
 ```rust
-use scc::HashMap;
+use scc2::HashMap;
 
 let hashmap: HashMap<u64, u32> = HashMap::default();
 
@@ -242,7 +242,7 @@ hashmap.entry(1).and_modify(|v| { *v = 3 }).or_insert(2);
 * Remove  `HashIndex::modify*` and `HashIndex::update*`: superseded by `HashIndex::entry*`, `HashIndex::get*`.
 
 ```rust
-use scc::HashIndex;
+use scc2::HashIndex;
 
 let hashindex: HashIndex<u64, u32> = HashIndex::default();
 assert!(hashindex.insert(1, 1).is_ok());
@@ -261,7 +261,7 @@ if let Some(mut o) = hashindex.get(&1) {
 * Remove `Hash*::for_each*`: superseded by `HashMap::retain*`.
 
 ```rust
-use scc::HashMap;
+use scc2::HashMap;
 
 let hashmap: HashMap<u64, u32> = HashMap::default();
 assert!(hashmap.insert(1, 1).is_ok());

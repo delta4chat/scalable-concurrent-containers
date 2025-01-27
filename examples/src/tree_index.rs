@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod examples {
-    use scc::TreeIndex;
+    use scc2::TreeIndex;
     use std::sync::Arc;
     use std::thread;
 

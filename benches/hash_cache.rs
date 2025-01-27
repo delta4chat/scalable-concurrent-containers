@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use scc::HashCache;
+use scc2::HashCache;
 use std::time::Instant;
 
 fn get(c: &mut Criterion) {

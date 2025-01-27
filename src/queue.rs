@@ -31,7 +31,7 @@ impl<T: 'static> Queue<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Queue;
+    /// use scc2::Queue;
     ///
     /// let queue: Queue<usize> = Queue::default();
     ///
@@ -56,7 +56,7 @@ impl<T: 'static> Queue<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Queue;
+    /// use scc2::Queue;
     ///
     /// let queue: Queue<usize> = Queue::default();
     ///
@@ -82,8 +82,8 @@ impl<T: 'static> Queue<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::ebr::Guard;
-    /// use scc::Queue;
+    /// use scc2::ebr::Guard;
+    /// use scc2::Queue;
     ///
     /// let queue: Queue<usize> = Queue::default();
     ///
@@ -121,7 +121,7 @@ impl<T> Queue<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Queue;
+    /// use scc2::Queue;
     ///
     /// let hello = String::from("hello");
     /// let queue: Queue<&str> = Queue::default();
@@ -153,7 +153,7 @@ impl<T> Queue<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Queue;
+    /// use scc2::Queue;
     ///
     /// let hello = String::from("hello");
     /// let queue: Queue<&str> = Queue::default();
@@ -176,7 +176,7 @@ impl<T> Queue<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Queue;
+    /// use scc2::Queue;
     ///
     /// let queue: Queue<usize> = Queue::default();
     ///
@@ -208,7 +208,7 @@ impl<T> Queue<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Queue;
+    /// use scc2::Queue;
     ///
     /// let queue: Queue<usize> = Queue::default();
     ///
@@ -246,7 +246,7 @@ impl<T> Queue<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Queue;
+    /// use scc2::Queue;
     ///
     /// let queue: Queue<usize> = Queue::default();
     ///
@@ -279,7 +279,7 @@ impl<T> Queue<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Queue;
+    /// use scc2::Queue;
     ///
     /// let queue: Queue<usize> = Queue::default();
     /// assert_eq!(queue.len(), 0);
@@ -302,7 +302,7 @@ impl<T> Queue<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::Queue;
+    /// use scc2::Queue;
     ///
     /// let queue: Queue<usize> = Queue::default();
     /// assert!(queue.is_empty());
@@ -320,8 +320,8 @@ impl<T> Queue<T> {
     /// # Examples
     ///
     /// ```
-    /// use scc::ebr::Guard;
-    /// use scc::Queue;
+    /// use scc2::ebr::Guard;
+    /// use scc2::Queue;
     ///
     /// let queue: Queue<usize> = Queue::default();
     /// assert_eq!(queue.iter(&Guard::new()).count(), 0);

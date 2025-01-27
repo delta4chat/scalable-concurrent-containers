@@ -119,7 +119,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     /// use std::collections::hash_map::RandomState;
     ///
     /// let hashindex: HashIndex<u64, u32, RandomState> =
@@ -153,7 +153,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     /// use std::collections::hash_map::RandomState;
     ///
     /// let hashindex: HashIndex<u64, u32, RandomState> =
@@ -209,7 +209,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<usize, usize> = HashIndex::with_capacity(1000);
     /// assert_eq!(hashindex.capacity(), 1024);
@@ -246,7 +246,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<char, u32> = HashIndex::default();
     ///
@@ -291,7 +291,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<char, u32> = HashIndex::default();
     ///
@@ -337,7 +337,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -374,7 +374,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<char, u32> = HashIndex::default();
     ///
@@ -399,7 +399,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -430,7 +430,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -465,7 +465,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -494,7 +494,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     /// let future_insert = hashindex.insert_async(11, 17);
@@ -527,7 +527,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -554,7 +554,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     /// let future_insert = hashindex.insert_async(11, 17);
@@ -578,7 +578,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -614,7 +614,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     /// let future_insert = hashindex.insert_async(11, 17);
@@ -655,7 +655,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -696,7 +696,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     /// let future_insert = hashindex.insert_async(11, 17);
@@ -737,8 +737,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::ebr::Guard;
-    /// use scc::HashIndex;
+    /// use scc2::ebr::Guard;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -766,7 +766,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -791,7 +791,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -816,7 +816,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -846,7 +846,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -907,7 +907,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -927,7 +927,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -947,7 +947,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -964,7 +964,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -982,7 +982,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex_default: HashIndex<u64, u32> = HashIndex::default();
     /// assert_eq!(hashindex_default.capacity(), 0);
@@ -1003,7 +1003,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -1025,7 +1025,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::with_capacity(1024);
     ///
@@ -1051,8 +1051,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::ebr::Guard;
-    /// use scc::HashIndex;
+    /// use scc2::ebr::Guard;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -1141,7 +1141,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::new();
     ///
@@ -1161,7 +1161,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::with_capacity(1000);
     ///
@@ -1188,7 +1188,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -1261,7 +1261,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -1278,7 +1278,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -1298,7 +1298,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -1324,7 +1324,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     /// assert_eq!(hashindex.entry(31).key(), &31);
@@ -1349,7 +1349,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -1390,7 +1390,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     /// hashindex.entry(11).or_default();
@@ -1431,7 +1431,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -1452,8 +1452,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
-    /// use scc::hash_index::Entry;
+    /// use scc2::HashIndex;
+    /// use scc2::hash_index::Entry;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -1490,8 +1490,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
-    /// use scc::hash_index::Entry;
+    /// use scc2::HashIndex;
+    /// use scc2::hash_index::Entry;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -1523,8 +1523,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
-    /// use scc::hash_index::Entry;
+    /// use scc2::HashIndex;
+    /// use scc2::hash_index::Entry;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -1555,8 +1555,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
-    /// use scc::hash_index::Entry;
+    /// use scc2::HashIndex;
+    /// use scc2::hash_index::Entry;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -1598,8 +1598,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
-    /// use scc::hash_index::Entry;
+    /// use scc2::HashIndex;
+    /// use scc2::hash_index::Entry;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -1639,8 +1639,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
-    /// use scc::hash_index::Entry;
+    /// use scc2::HashIndex;
+    /// use scc2::hash_index::Entry;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -1702,7 +1702,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
+    /// use scc2::HashIndex;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     /// assert_eq!(hashindex.entry(11).key(), &11);
@@ -1717,8 +1717,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
-    /// use scc::hash_index::Entry;
+    /// use scc2::HashIndex;
+    /// use scc2::hash_index::Entry;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///
@@ -1736,8 +1736,8 @@ where
     /// # Examples
     ///
     /// ```
-    /// use scc::HashIndex;
-    /// use scc::hash_index::Entry;
+    /// use scc2::HashIndex;
+    /// use scc2::hash_index::Entry;
     ///
     /// let hashindex: HashIndex<u64, u32> = HashIndex::default();
     ///

@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use scc::Bag;
+use scc2::Bag;
 
 fn bag_push_pop(c: &mut Criterion) {
     let bag: Bag<usize> = Bag::default();

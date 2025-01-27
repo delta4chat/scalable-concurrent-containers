@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod examples {
-    use scc::HashIndex;
+    use scc2::HashIndex;
     use std::sync::Arc;
     use std::thread;
 

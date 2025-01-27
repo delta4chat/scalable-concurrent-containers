@@ -1,6 +1,6 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use scc::ebr::Guard;
-use scc::TreeIndex;
+use scc2::ebr::Guard;
+use scc2::TreeIndex;
 use std::time::Instant;
 
 fn insert(c: &mut Criterion) {

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod examples {
-    use scc::HashMap;
+    use scc2::HashMap;
     use std::sync::Arc;
     use std::thread;
 

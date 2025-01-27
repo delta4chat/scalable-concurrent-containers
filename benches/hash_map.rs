@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use scc::HashMap;
+use scc2::HashMap;
 use std::time::{Duration, Instant};
 
 fn insert_cold(c: &mut Criterion) {
