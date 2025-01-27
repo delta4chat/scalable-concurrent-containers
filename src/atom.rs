@@ -8,21 +8,21 @@ extern crate alloc;
 use alloc::sync::Arc;
 
 /// Atom is a container that only store single element.
-pub struct Atom<T> {
+pub struct Atom<T: ?Sized> {
     value: AtomicShared<Arc<T>>,
 }
 
-unsafe impl<T> Send for Atom<T> {}
-unsafe impl<T> Sync for Atom<T> {}
+unsafe impl<T: ?Sized> Send for Atom<T> {}
+unsafe impl<T: ?Sized> Sync for Atom<T> {}
 
-impl<T: core::fmt::Debug> core::fmt::Debug for Atom<T> {
+impl<T: ?Sized + core::fmt::Debug> core::fmt::Debug for Atom<T> {
     #[inline]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         let val = self.get();
         f.debug_tuple("Atom").field(&val).finish()
     }
 }
-impl<T: core::fmt::Display> core::fmt::Display for Atom<T> {
+impl<T: ?Sized + core::fmt::Display> core::fmt::Display for Atom<T> {
     #[inline]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         if let Some(val) = self.get() {
@@ -33,95 +33,95 @@ impl<T: core::fmt::Display> core::fmt::Display for Atom<T> {
     }
 }
 
-impl<T> From<&Atom<T>> for Option<Arc<T>> {
+impl<T: ?Sized> From<&Atom<T>> for Option<Arc<T>> {
     fn from(val: &Atom<T>) -> Option<Arc<T>> {
         val.get()
     }
 }
-impl<T> From<Atom<T>> for Option<Arc<T>> {
+impl<T: ?Sized> From<Atom<T>> for Option<Arc<T>> {
     fn from(val: Atom<T>) -> Option<Arc<T>> {
         (&val).into()
     }
 }
 
-impl<T: PartialEq> PartialEq for Atom<T> {
+impl<T: ?Sized + PartialEq> PartialEq for Atom<T> {
     fn eq(&self, other: &Self) -> bool {
         self.get() == other.get()
     }
 }
-impl<T: Eq> Eq for Atom<T> {}
+impl<T: ?Sized + Eq> Eq for Atom<T> {}
 
-impl<T: PartialOrd> PartialOrd for Atom<T> {
+impl<T: ?Sized + PartialOrd> PartialOrd for Atom<T> {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         let other = other.get();
         self.get().partial_cmp(&other)
     }
 }
-impl<T: Ord> Ord for Atom<T> {
+impl<T: ?Sized + Ord> Ord for Atom<T> {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         let other = other.get();
         self.get().cmp(&other)
     }
 }
 
-impl<T: core::hash::Hash> core::hash::Hash for Atom<T> {
+impl<T: ?Sized + core::hash::Hash> core::hash::Hash for Atom<T> {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.get().hash(state)
     }
 }
 
-impl<T: 'static> From<T> for Atom<T> {
+impl<T: 'static + Sized> From<T> for Atom<T> {
     fn from(val: T) -> Self {
         Self::new(val)
     }
 }
-impl<T: 'static + Clone> From<&T> for Atom<T> {
+impl<T: 'static + ?Sized + Clone> From<&T> for Atom<T> {
     fn from(val: &T) -> Self {
         val.clone().into()
     }
 }
 
-impl<T: 'static> From<Arc<T>> for Atom<T> {
+impl<T: 'static + ?Sized> From<Arc<T>> for Atom<T> {
     fn from(arc_val: Arc<T>) -> Self {
         Self::new_arc(arc_val)
     }
 }
-impl<T: 'static> From<&Arc<T>> for Atom<T> {
+impl<T: 'static + ?Sized> From<&Arc<T>> for Atom<T> {
     fn from(arc_val: &Arc<T>) -> Self {
         arc_val.clone().into()
     }
 }
-impl<T: 'static + Clone> From<Arc<&T>> for Atom<T> {
+impl<T: 'static + ?Sized + Clone> From<Arc<&T>> for Atom<T> {
     fn from(arc_val: Arc<&T>) -> Self {
         (*arc_val).into()
     }
 }
 
-impl<T: 'static> From<Box<T>> for Atom<T> {
+impl<T: 'static + ?Sized> From<Box<T>> for Atom<T> {
     fn from(box_val: Box<T>) -> Self {
         let arc_val: Arc<T> = box_val.into();
         Self::new_arc(arc_val)
     }
 }
-impl<T: 'static + Clone> From<Box<&T>> for Atom<T> {
+impl<T: 'static + ?Sized + Clone> From<Box<&T>> for Atom<T> {
     fn from(box_val: Box<&T>) -> Self {
         (*box_val).into()
     }
 }
-impl<T: 'static + Clone> From<&Box<T>> for Atom<T> {
+impl<T: 'static + ?Sized + Clone> From<&Box<T>> for Atom<T> {
     fn from(box_val: &Box<T>) -> Self {
         box_val.clone().into()
     }
 }
 
-impl<T> Default for Atom<T> {
+impl<T: ?Sized> Default for Atom<T> {
     #[inline]
     fn default() -> Self {
         Self::init()
     }
 }
 
-impl<T> Atom<T> {
+impl<T: ?Sized> Atom<T> {
     /// initialize Atom with no value.
     #[inline]
     pub fn init() -> Self {
@@ -131,13 +131,15 @@ impl<T> Atom<T> {
     }
 }
 
-impl<T: 'static> Atom<T> {
+impl<T: 'static + Sized> Atom<T> {
     /// creates new instance of Atom for provided value
     #[inline]
     pub fn new(val: T) -> Self {
         unsafe { Self::new_unchecked(val) }
     }
+}
 
+impl<T: 'static + ?Sized> Atom<T> {
     /// creates new instance of Atom for provided Arc-wrapped value
     #[inline]
     pub fn new_arc(arc_val: Arc<T>) -> Self {
@@ -145,7 +147,7 @@ impl<T: 'static> Atom<T> {
     }
 }
 
-impl<T> Atom<T> {
+impl<T: Sized> Atom<T> {
     /// creates new instance of Atom for provided value
     ///
     /// ## <big>however, this is not checking the lifetime of T.</big>
@@ -160,7 +162,9 @@ impl<T> Atom<T> {
         unsafe { this.set_unchecked(val); }
         this
     }
+}
 
+impl<T: ?Sized> Atom<T> {
     /// creates new instance of Atom for provided Arc-wrapped value
     ///
     /// ## <big>however, this is not checking the lifetime of T.</big>
@@ -177,7 +181,7 @@ impl<T> Atom<T> {
     }
 }
 
-impl<T> Clone for Atom<T> {
+impl<T: ?Sized> Clone for Atom<T> {
     #[inline]
     fn clone(&self) -> Self {
         let self_clone = Self::init();
@@ -188,23 +192,25 @@ impl<T> Clone for Atom<T> {
     }
 }
 
-impl<T: 'static> Atom<T> {
+impl<T: 'static + Sized> Atom<T> {
     /// set Atom to provided value. returns the Arc-wrapped-value of you provided value.
     #[inline]
     pub fn set(&self, val: T) -> Arc<T> {
         unsafe { self.set_unchecked(val) }
     }
 
-    /// set Atom to provided Arc-wrapped value.
-    #[inline]
-    pub fn set_arc(&self, arc_val: Arc<T>) {
-        unsafe { self.set_arc_unchecked(arc_val) }
-    }
-
     /// set Atom to provided value and returns the old value.
     #[inline]
     pub fn swap(&self, val: T) -> Option<Arc<T>> {
         unsafe { self.swap_unchecked(val) }
+    }
+}
+
+impl<T: 'static + ?Sized> Atom<T> {
+    /// set Atom to provided Arc-wrapped value.
+    #[inline]
+    pub fn set_arc(&self, arc_val: Arc<T>) {
+        unsafe { self.set_arc_unchecked(arc_val) }
     }
 
     /// set Atom to provided Arc-wrapped value and returns the old value.
@@ -214,7 +220,7 @@ impl<T: 'static> Atom<T> {
     }
 }
 
-impl<T> Atom<T> {
+impl<T: Sized> Atom<T> {
     /// set Atom to provided value. returns the Arc-wrapped-value of you provided value.
     ///
     /// ## <big>however, this is not checking the lifetime of T.</big>
@@ -230,20 +236,6 @@ impl<T> Atom<T> {
         arc_val
     }
 
-    /// set Atom to provided Arc-wrapped value.
-    ///
-    /// ## <big>however, this is not checking the lifetime of T.</big>
-    ///
-    /// # <big>Safety</big>
-    /// `T::drop` can be run after the [`Atom`] is dropped,
-    /// therefore it is safe only if `T::drop` does not access short-lived data,
-    /// or [`core::mem::needs_drop`] is `false` for `T`.
-    #[inline]
-    pub unsafe fn set_arc_unchecked(&self, arc_val: Arc<T>) {
-        let shared = Some(unsafe { Shared::new_unchecked(arc_val) });
-        self.value.swap((shared, Tag::None), Acquire);
-    }
-
     /// set Atom to provided value and returns the old value.
     ///
     /// ## <big>however, this is not checking the lifetime of T.</big>
@@ -256,6 +248,22 @@ impl<T> Atom<T> {
     pub unsafe fn swap_unchecked(&self, val: T) -> Option<Arc<T>> {
         let arc_val = Arc::new(val);
         unsafe { self.swap_arc_unchecked(arc_val) }
+    }
+}
+
+impl<T: ?Sized> Atom<T> {
+    /// set Atom to provided Arc-wrapped value.
+    ///
+    /// ## <big>however, this is not checking the lifetime of T.</big>
+    ///
+    /// # <big>Safety</big>
+    /// `T::drop` can be run after the [`Atom`] is dropped,
+    /// therefore it is safe only if `T::drop` does not access short-lived data,
+    /// or [`core::mem::needs_drop`] is `false` for `T`.
+    #[inline]
+    pub unsafe fn set_arc_unchecked(&self, arc_val: Arc<T>) {
+        let shared = Some(unsafe { Shared::new_unchecked(arc_val) });
+        self.value.swap((shared, Tag::None), Acquire);
     }
 
     /// set Atom to provided Arc-wrapped value and returns the old value.
@@ -296,7 +304,7 @@ impl<T> Atom<T> {
     }
 }
 
-impl<T: 'static> Atom<T> {
+impl<T: 'static + Sized> Atom<T> {
     /// update the provided value if any.
     ///
     /// ## <big>however, this is not checking the lifetime of T.</big>
@@ -312,7 +320,9 @@ impl<T: 'static> Atom<T> {
     ) -> (Option<Arc<T>>, Option<Arc<T>>) {
         unsafe { self.update_unchecked(f) }
     }
+}
 
+impl<T: 'static + ?Sized> Atom<T> {
     /// update the provided Arc-wrapped value if any.
     ///
     /// ## <big>however, this is not checking the lifetime of T.</big>
@@ -330,7 +340,7 @@ impl<T: 'static> Atom<T> {
     }
 }
 
-impl<T> Atom<T> {
+impl<T: Sized> Atom<T> {
     /// update the provided value if any.
     #[inline]
     pub unsafe fn update_unchecked(
@@ -343,7 +353,9 @@ impl<T> Atom<T> {
         }
         (old, self.get())
     }
+}
 
+impl<T: ?Sized> Atom<T> {
     /// update the provided Arc-wrapped value if any.
     #[inline]
     pub unsafe fn update_arc_unchecked(
