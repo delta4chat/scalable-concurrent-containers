@@ -3,7 +3,7 @@ use super::leaf_node::RemoveRangeState;
 use super::leaf_node::{LOCKED, RETIRED};
 use super::node::Node;
 use crate::ebr::{AtomicShared, Guard, Ptr, Shared, Tag};
-use crate::exit_guard::ExitGuard;
+use crate::exit_guard::Defer;
 use crate::maybe_std::AtomicU8;
 use crate::wait_queue::{DeriveAsyncWait, WaitQueue};
 use crate::Comparable;
@@ -653,10 +653,8 @@ where
                 .store((full_node_key as *const K).cast_mut(), Relaxed);
         }
 
-        let mut exit_guard = ExitGuard::new(true, |rollback| {
-            if rollback {
-                self.rollback(guard);
-            }
+        let mut rollback_defer = Defer::new(|| {
+            self.rollback(guard);
         });
         match target {
             Node::Internal(full_internal_node) => {
@@ -891,11 +889,11 @@ where
             }
             InsertResult::Full(..) | InsertResult::Retired(..) => {
                 // Insertion failed: expects that the parent splits this node.
-                *exit_guard = false;
+                rollback_defer.cancel();
                 return Ok(InsertResult::Full(key, val));
             }
         };
-        *exit_guard = false;
+        rollback_defer.cancel();
 
         // Replace the full node with the high-key node.
         let unused_node = full_node

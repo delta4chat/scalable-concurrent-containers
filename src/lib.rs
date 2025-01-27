@@ -8,7 +8,8 @@ pub use bag::Bag;
 mod equivalent;
 pub use equivalent::{Comparable, Equivalent};
 
-mod exit_guard;
+pub mod exit_guard;
+pub use exit_guard::{ExitGuard, Defer};
 
 pub mod atom;
 pub use atom::Atom;

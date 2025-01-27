@@ -2,7 +2,7 @@ use super::leaf::{InsertResult, RemoveResult, Scanner, DIMENSION};
 use super::node::Node;
 use super::Leaf;
 use crate::ebr::{AtomicShared, Guard, Ptr, Shared, Tag};
-use crate::exit_guard::ExitGuard;
+use crate::exit_guard::Defer;
 use crate::maybe_std::AtomicU8;
 use crate::wait_queue::{DeriveAsyncWait, WaitQueue};
 use crate::LinkedList;
@@ -862,12 +862,10 @@ where
         let mut high_key_leaf_shared = None;
 
         // Distribute entries to two leaves after make the target retired.
-        let mut exit_guard = ExitGuard::new(true, |rollback| {
-            if rollback {
-                target.thaw();
-                self.split_op.reset();
-                self.unlock();
-            }
+        let mut rollback_defer = Defer::new(|| {
+            target.thaw();
+            self.split_op.reset();
+            self.unlock();
         });
         target.freeze_and_distribute(&mut low_key_leaf_shared, &mut high_key_leaf_shared);
 
@@ -924,7 +922,7 @@ where
                     // Need to freeze the other leaf.
                     let frozen = high_key_leaf.freeze();
                     debug_assert!(frozen);
-                    *exit_guard = false;
+                    rollback_defer.cancel();
                     return Ok(InsertResult::Full(key, val));
                 }
             };
@@ -968,7 +966,7 @@ where
                 )
                 .0
         };
-        *exit_guard = false;
+        rollback_defer.cancel();
 
         let origin = self.split_op.reset();
         self.unlock();

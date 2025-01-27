@@ -1,7 +1,7 @@
 //! [`Bag`] is a lock-free concurrent unordered instance container.
 
 use super::ebr::Guard;
-use super::exit_guard::ExitGuard;
+use super::exit_guard::Defer;
 use super::{LinkedEntry, LinkedList, Stack};
 use std::cell::UnsafeCell;
 use std::iter::FusedIterator;
@@ -543,7 +543,7 @@ impl<T, const ARRAY_LEN: usize> Storage<T, ARRAY_LEN> {
             ) {
                 Ok(_) => {
                     metadata = marked_for_removal;
-                    let _guard = ExitGuard::new((), |()| loop {
+                    let _defer = Defer::new(|| loop {
                         let new_metadata =
                             metadata & (!((instances_to_pop << ARRAY_LEN) | instances_to_pop));
                         if let Err(actual) = self.metadata.compare_exchange_weak(
