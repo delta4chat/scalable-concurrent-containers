@@ -50,6 +50,8 @@ pub enum ChanError {
     Other(String),
 }
 
+impl core::error::Error for ChanError {}
+
 impl core::fmt::Display for ChanError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         use ChanError::*;
