@@ -156,7 +156,17 @@ impl<T> Chan<T> {
             }
         }
         unsafe { self.0.msg.push_unchecked(val); }
-        self.0.len.fetch_add(1, Acquire);
+        let _ = self.0.len.fetch_update(
+            Acquire,
+            Acquire,
+            |l| {
+                if l < usize::MAX {
+                    Some(l + 1)
+                } else {
+                    None
+                }
+            }
+        );
         Ok(())
     }
 }
