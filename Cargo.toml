@@ -2,7 +2,7 @@
 name = "scc2"
 description = "High-performance containers and utilities for concurrent and asynchronous programming"
 documentation = "https://docs.rs/scc2"
-version = "2.4.0"
+version = "2.4.1"
 authors = ["wvwwvwwv <wvwwvwwv@me.com>", "Delta 4 <156182500+delta4chat@users.noreply.github.com>"]
 edition = "2021"
 rust-version = "1.65.0"
