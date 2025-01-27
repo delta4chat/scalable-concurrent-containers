@@ -3,7 +3,6 @@
 use super::ebr::{AtomicShared, Guard, Shared, Tag};
 
 use core::sync::atomic::Ordering::Acquire; //{AcqRel, Acquire, Relaxed};
-use core::fmt::{Debug, Formatter};
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -13,11 +12,105 @@ pub struct Atom<T> {
     value: AtomicShared<Arc<T>>,
 }
 
-impl<T: Debug> Debug for Atom<T> {
+unsafe impl<T> Send for Atom<T> {}
+unsafe impl<T> Sync for Atom<T> {}
+
+impl<T: core::fmt::Debug> core::fmt::Debug for Atom<T> {
     #[inline]
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), core::fmt::Error> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         let val = self.get();
         f.debug_tuple("Atom").field(&val).finish()
+    }
+}
+impl<T: core::fmt::Display> core::fmt::Display for Atom<T> {
+    #[inline]
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+        if let Some(val) = self.get() {
+            f.write_str(val.to_string().as_ref())
+        } else {
+            Err(core::fmt::Error)
+        }
+    }
+}
+
+impl<T> From<&Atom<T>> for Option<Arc<T>> {
+    fn from(val: &Atom<T>) -> Option<Arc<T>> {
+        val.get()
+    }
+}
+impl<T> From<Atom<T>> for Option<Arc<T>> {
+    fn from(val: Atom<T>) -> Option<Arc<T>> {
+        (&val).into()
+    }
+}
+
+impl<T: PartialEq> PartialEq for Atom<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.get() == other.get()
+    }
+}
+impl<T: Eq> Eq for Atom<T> {}
+
+impl<T: PartialOrd> PartialOrd for Atom<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        let other = other.get();
+        self.get().partial_cmp(&other)
+    }
+}
+impl<T: Ord> Ord for Atom<T> {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        let other = other.get();
+        self.get().cmp(&other)
+    }
+}
+
+impl<T: core::hash::Hash> core::hash::Hash for Atom<T> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.get().hash(state)
+    }
+}
+
+impl<T: 'static> From<T> for Atom<T> {
+    fn from(val: T) -> Self {
+        Self::new(val)
+    }
+}
+impl<T: 'static + Clone> From<&T> for Atom<T> {
+    fn from(val: &T) -> Self {
+        val.clone().into()
+    }
+}
+
+impl<T: 'static> From<Arc<T>> for Atom<T> {
+    fn from(arc_val: Arc<T>) -> Self {
+        Self::new_arc(arc_val)
+    }
+}
+impl<T: 'static> From<&Arc<T>> for Atom<T> {
+    fn from(arc_val: &Arc<T>) -> Self {
+        arc_val.clone().into()
+    }
+}
+impl<T: 'static + Clone> From<Arc<&T>> for Atom<T> {
+    fn from(arc_val: Arc<&T>) -> Self {
+        (*arc_val).into()
+    }
+}
+
+impl<T: 'static> From<Box<T>> for Atom<T> {
+    fn from(box_val: Box<T>) -> Self {
+        let arc_val: Arc<T> = box_val.into();
+        Self::new_arc(arc_val)
+    }
+}
+impl<T: 'static + Clone> From<Box<&T>> for Atom<T> {
+    fn from(box_val: Box<&T>) -> Self {
+        (*box_val).into()
+    }
+}
+impl<T: 'static + Clone> From<&Box<T>> for Atom<T> {
+    fn from(box_val: &Box<T>) -> Self {
+        box_val.clone().into()
     }
 }
 
