@@ -14,6 +14,69 @@ use crate::Queue;
 use crate::ebr::Guard;
 use crate::linked_list::Entry;
 
+/// another method for create Chan instance.
+pub fn new<T>(size: Option<usize>) -> Chan<T> {
+    Chan::new(size)
+}
+
+/// create Chan instance, then split it to get tuple for (Sender, Receiver)
+pub fn split<T>(size: Option<usize>) -> (Chan<T>, Chan<T>) {
+    let chan = new(size);
+    chan.split().unwrap()
+}
+
+/// provide compatibility for `smol::channel`, `async_channel` and `async_std::channel`.
+///
+/// create (Sender, Receiver) tuple with bounded size (limited number of queued messages).
+pub fn bounded<T>(size: usize) -> (Chan<T>, Chan<T>) {
+    split(Some(size))
+}
+
+/// provide compatibility for `smol::channel`, `async_channel`, and `async_std::channel`.
+///
+/// create (Sender, Receiver) tuple with unbounded size. (unlimited number of queued messages).
+pub fn unbounded<T>() -> (Chan<T>, Chan<T>) {
+    split(None)
+}
+
+/// this module provides compatibility for `std::sync::{mpsc, mpmc}`.
+pub mod std {
+    use super::*;
+
+    /// provide compatibility for `std::sync::mpsc::unbounded` and `std::sync::mpmc::unbounded`.
+    ///
+    /// internally calls [`unbounded()`]
+    pub fn channel<T>() -> (Chan<T>, Chan<T>) {
+        unbounded()
+    }
+
+    /// provide compatibility for `std::sync::mpsc::bounded` and `std::sync::mpmc::bounded`.
+    ///
+    /// internally calls [`unbounded()`]
+    pub fn sync_channel<T>(size: usize) -> (Chan<T>, Chan<T>) {
+        bounded(size)
+    }
+}
+
+/// this module provides compatibility for `tokio::sync::mpsc`.
+pub mod tokio {
+    use super::*;
+
+    /// provide compatibility for `tokio::sync::mpsc::channel`.
+    ///
+    /// internally calls [`bounded()`]
+    pub fn channel<T>(size: usize) -> (Chan<T>, Chan<T>) {
+        bounded(size)
+    }
+
+    /// provide compatibility for `tokio::sync::mpsc::unbounded_channel`.
+    ///
+    /// internally calls [`unbounded()`]
+    pub fn unbounded_channel<T>() -> (Chan<T>, Chan<T>) {
+        unbounded()
+    }
+}
+
 /// Error type for Chan
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ChanError {
@@ -84,17 +147,21 @@ impl<T> ChanInner<T> {
     }
 
     fn gen_id(&self) -> usize {
-        self.chan_id_counter.fetch_update(SeqCst, SeqCst, |c| {
-            if c < usize::MAX {
-                Some(c + 1)
-            } else {
-                panic!("Chan ID has been exhausted!")
+        self.chan_id_counter.fetch_update(
+            SeqCst,
+            SeqCst,
+            |c| {
+                if c < usize::MAX {
+                    Some(c + 1)
+                } else {
+                    panic!("Chan ID has been exhausted!")
+                }
             }
-        }).unwrap()
+        ).unwrap()
     }
 }
 
-/// (Experimental) multi-producer, multi-consumer (MPMC) channel backend utilizes a HashMap and Queue.
+/// (Experimental) multi-producer, multi-consumer (MPMC) channel backend utilizes a [`TreeIndex`] and [`Queue`], where each message can be received by only one of all existing consumers.
 ///
 /// Typically, this is a first-in, first-out (FIFO) channel, provided that only a single sender is active concurrently.
 ///
@@ -137,7 +204,7 @@ impl<T> Clone for Chan<T> {
 
 impl<T> Default for Chan<T> {
     fn default() -> Self {
-        Self::new(None)
+        Self::unbounded()
     }
 }
 
@@ -171,6 +238,38 @@ impl<T> Chan<T> {
         Self::init(id, Self::RECV_SEND, inner)
     }
 
+    /// create bounded Channel (limited number of queued messages).
+    pub fn bounded(size: usize) -> Self {
+        Self::new(Some(size))
+    }
+
+    /// create unbounded Channel (unlimited number of queued messages).
+    pub fn unbounded() -> Self {
+        Self::new(None)
+    }
+
+    /// create two side from this channel: the left side is sender, and the right side is receiver.
+    ///
+    /// this is does not work if this is not a bidirectional channel.
+    pub fn split(&self) -> Result<(Chan<T>, Chan<T>), ChanError> {
+        let flag = self.flag();
+
+        if flag == Self::RECV_ONLY {
+            return Err(ChanError::RecvOnly);
+        }
+        if flag == Self::SEND_ONLY {
+            return Err(ChanError::SendOnly);
+        }
+
+        let sender = self.clone();
+        let receiver = self.clone();
+
+        sender.send_only();
+        receiver.recv_only();
+
+        Ok((sender, receiver))
+    }
+
     /// get current flag of this channel.
     pub fn flag(&self) -> u8 {
         self.flag.load(Relaxed)
@@ -190,6 +289,19 @@ impl<T> Chan<T> {
     /// restrict this Chan instance for send message only.
     pub fn send_only(&self) {
         self.set_flag(Self::SEND_ONLY);
+    }
+
+    /// checks whether this channel is bidirectional (can send and receive messages)
+    pub fn is_bidirectional(&self) -> bool {
+        self.flag() == Self::RECV_SEND
+    }
+    /// checks whether this channel able to receive messages.
+    pub fn is_receiver(&self) -> bool {
+        self.is_bidirectional() || self.flag() == Self::RECV_ONLY
+    }
+    /// checks whether this channel able to send messages.
+    pub fn is_sender(&self) -> bool {
+        self.is_bidirectional() || self.flag() == Self::SEND_ONLY
     }
 
     /// get current number of senders. this internally calls [`TreeIndex::len()`] so the time complexity is `O(N)`.
@@ -333,9 +445,17 @@ impl<T> Chan<T> {
         Err(ChanError::Empty)
     }
 
+    fn clone_without_change_id(&self) -> Self {
+        let flag = self.flag();
+        let inner = self.inner.clone();
+        let id = self.id;
+
+        Self::init(id, flag, inner)
+    }
+
     /// Asynchronous receive message from this channel
     pub fn recv(&self) -> ChanRecv<T> {
-        ChanRecv(self.clone())
+        ChanRecv(self.clone_without_change_id())
     }
 }
 
