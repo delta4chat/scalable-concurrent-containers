@@ -597,6 +597,46 @@ impl<T> Chan<T> {
     pub fn recv(&self) -> ChanRecv<T> {
         ChanRecv(self.clone_without_change_id())
     }
+
+    /// Synchronous receive message from this channel:
+    /// internally it calls `block_on(self.recv())`
+    pub fn recv_blocking(&self) -> Result<T, ChanError> {
+        block_on(self.recv())
+    }
+}
+
+/// NOTE: not tested WIP
+fn block_on<T>(fut: impl core::future::Future<Output=T>) -> T {
+    use core::task::Context;
+    use core::task::Poll::*;
+    use core::pin::pin;
+
+    extern crate std;
+    use std::thread::{self, Thread};
+    use std::task::Wake;
+    use std::time::Duration;
+
+    struct ThreadWaker(Thread);
+    impl Wake for ThreadWaker {
+        fn wake(self: Arc<Self>) {
+            self.0.unpark();
+        }
+    }
+
+    let waker = Arc::new(ThreadWaker(thread::current())).into();
+    let mut ctx = Context::from_waker(&waker);
+
+    let mut fut = pin!(fut);
+    loop {
+        match fut.as_mut().poll(&mut ctx) {
+            Ready(ret) => {
+                return ret;
+            },
+            _ => {
+                thread::park_timeout(Duration::from_secs(10));
+            }
+        }
+    }
 }
 
 /// Chan::recv() returns this type that implements [`core::future::Future`] for awaiting
