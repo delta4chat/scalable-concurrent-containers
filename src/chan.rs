@@ -127,6 +127,7 @@ impl core::error::Error for ChanError {}
 #[derive(Debug)]
 struct ChanInner<T: 'static> {
     queues: TreeIndex<usize, Arc<Queue<T>>>, // sender_id -> Queue<T>
+    wakers: Queue<core::task::Waker>,
     len: AtomicUsize,
     size: Option<usize>,
     global_closed: AtomicBool,
@@ -139,6 +140,7 @@ impl<T> ChanInner<T> {
     fn new(size: Option<usize>) -> Self {
         Self {
             queues: Default::default(),
+            wakers: Default::default(),
             len: AtomicUsize::new(0),
             size,
             global_closed: AtomicBool::new(false),
@@ -158,6 +160,16 @@ impl<T> ChanInner<T> {
                 }
             }
         ).unwrap()
+    }
+
+    fn add_waker(&self, waker: core::task::Waker) {
+        self.wakers.push(waker);
+    }
+
+    fn wake(&self) {
+        while let Some(waker) = self.wakers.pop() {
+            waker.wake_by_ref();
+        }
     }
 }
 
@@ -385,6 +397,10 @@ impl<T> Chan<T> {
                 }
             }
         );
+
+        // wake all pending futures
+        self.inner.wake();
+
         Ok(())
     }
 
@@ -468,13 +484,15 @@ impl<T> core::future::Future for ChanRecv<T> {
 
     fn poll(
         self: core::pin::Pin<&mut Self>,
-        _ctx: &mut core::task::Context<'_>
+        ctx: &mut core::task::Context<'_>
     ) -> core::task::Poll<Self::Output> {
         use core::task::Poll;
         match self.0.try_recv() {
             Ok(msg) => Poll::Ready(Ok(msg)),
             Err(err) => {
                 if err == ChanError::Empty {
+                    let waker = ctx.waker();
+                    self.0.inner.add_waker(waker.clone());
                     Poll::Pending
                 } else {
                     Poll::Ready(Err(err))
