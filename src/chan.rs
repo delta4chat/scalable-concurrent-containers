@@ -1,4 +1,4 @@
-//! MPMC channel backend by [`Queue`].
+//! MPMC channel backend by [`TreeIndex`] and [`Queue`].
 
 use core::sync::atomic::{
     AtomicBool,
@@ -126,6 +126,7 @@ impl core::error::Error for ChanError {}
 
 #[derive(Debug)]
 struct ChanInner<T: 'static> {
+    skip_queue_id: AtomicUsize,
     queues: TreeIndex<usize, Arc<Queue<T>>>, // sender_id -> Queue<T>
     wakers: Queue<core::task::Waker>,
     len: AtomicUsize,
@@ -139,6 +140,7 @@ unsafe impl<T> Sync for ChanInner<T> {}
 impl<T> ChanInner<T> {
     fn new(size: Option<usize>) -> Self {
         Self {
+            skip_queue_id: AtomicUsize::new(0), // zero is invalid value due to chan_id start from 100.
             queues: Default::default(),
             wakers: Default::default(),
             len: AtomicUsize::new(0),
@@ -166,10 +168,40 @@ impl<T> ChanInner<T> {
         self.wakers.push(waker);
     }
 
-    fn wake(&self) {
-        while let Some(waker) = self.wakers.pop() {
+    fn wake_one(&self) -> bool {
+        if let Some(waker) = self.wakers.pop() {
             waker.wake_by_ref();
+            true
+        } else {
+            false
         }
+    }
+
+    fn wake(&self, max: usize) -> usize {
+        let mut wakes = 0;
+        for _ in 0..max {
+            if self.wake_one() {
+                if wakes < usize::MAX {
+                    wakes += 1;
+                }
+            } else {
+                break;
+            }
+        }
+        wakes
+    }
+
+    fn wake_all(&self) -> usize {
+        let mut wakes: usize = 0;
+        loop {
+            let w = self.wake(usize::MAX);
+            if w > 0 {
+                wakes = wakes.saturating_add(w);
+            } else {
+                break;
+            }
+        }
+        wakes
     }
 }
 
@@ -180,7 +212,7 @@ impl<T> ChanInner<T> {
 /// However, in the event that multiple senders are active concurrently, there is unable to guarantee the ordering of messages.
 ///
 /// # in the case of multi-senders
-/// If the `rand` feature was not enabled (by default), then the Sender with the smallest ID would be prioritized over the others (the default behavior of [`TreeIndex::iter()`]), which could starve the other Sender with the larger ID.
+/// If the `rand` feature was not enabled (by default), then the Sender with the smallest ID would be prioritized over the others (the default behavior of [`TreeIndex::iter()`]), which could starve the other Sender with the larger ID. for now implements "idle algorithm" that temporary skipping the latest sender from receiving, but that might not be enough.
 ///
 /// if enables the `rand` feature, then [`rand::seq::SliceRandom::shuffle`](https://docs.rs/rand/0.9.0/rand/seq/trait.SliceRandom.html#tymethod.shuffle) is used for shuffled disorderly iterating, which should ensure some degree of fairness. 
 #[derive(Debug)]
@@ -375,7 +407,7 @@ impl<T> Chan<T> {
         let queue =
             match
                 self.inner.queues.peek_with(&self.id, |k, v| {
-                    assert_eq!(self.id, *k);
+                    assert_eq!(k, &self.id);
                     v.clone()
                 })
             {
@@ -398,10 +430,57 @@ impl<T> Chan<T> {
             }
         );
 
-        // wake all pending futures
-        self.inner.wake();
+        let len = self.len();
+
+        let (minor_backlog, major_backlog) =
+            if let Some(size) = self.inner.size {
+                ((size / 10).min(10), (size / 2).min(100))
+            } else {
+                (10, 100)
+            };
+
+        if len >= major_backlog {
+            // wake all receiver due to too many backlog messages
+            self.inner.wake_all();
+        } else if len >= minor_backlog {
+            // wake only len receiver if current len >= minor_backlog
+            self.inner.wake(len);
+        } else {
+            // wake only one receiver futures
+            self.inner.wake_one();
+        }
 
         Ok(())
+    }
+
+    fn try_pop_from(&self, id: &usize, queue: &Arc<Queue<T>>) -> Option<T> {
+        if let Some(mut shared) = queue.pop() {
+            // received message from this queue, skipping it after (if multi senders exists)
+            self.inner.skip_queue_id.store(*id, Relaxed);
+
+            let _ = self.inner.len.fetch_update(
+                Acquire,
+                Acquire,
+                |l| {
+                    if l > 0 {
+                        Some(l - 1)
+                    } else {
+                        None
+                    }
+                }
+            );
+
+            if let Some(entry) = unsafe { shared.get_mut() } {
+                return Some(unsafe { entry.take_inner() });
+            } else {
+                let guard = Guard::new();
+                let ptr = shared.get_guarded_ptr(&guard).as_ptr();
+                let entry = unsafe { &mut *(ptr as *mut Entry<T>) };
+                return Some(unsafe { entry.take_inner() });
+            }
+        }
+
+        None
     }
 
     /// try receive message from this channel.
@@ -416,45 +495,47 @@ impl<T> Chan<T> {
         }
 
         let guard = Guard::new();
-        let iter = self.inner.queues.iter(&guard);
+        let queues: Vec<(&usize, &Arc<Queue<T>>)> = self.inner.queues.iter(&guard).collect();
 
         #[cfg(feature="rand")]
-        let iter = {
-            use rand::seq::SliceRandom;
-            let mut vec: Vec<(&usize, &Arc<Queue<T>>)> = iter.collect();
-            let mut rng = rand::thread_rng();
-            vec.shuffle(&mut rng);
-            vec.into_iter()
-        };
+        let mut queues = queues;
 
-        for (id, queue) in iter {
-            if *id == self.id {
+        #[cfg(feature="rand")]
+        {
+            use rand::seq::SliceRandom;
+            let mut rng = rand::thread_rng();
+            queues.shuffle(&mut rng);
+        }
+
+        let queues_len = queues.len();
+        let mut maybe_skipped = None;
+        for (id, queue) in queues.into_iter() {
+            if id == &self.id {
                 // skip myself.
                 // so a thread both sending and receiving will only receive messages from other senders.
                 continue;
             }
 
-            if let Some(mut shared) = queue.pop() {
-                let _ = self.inner.len.fetch_update(
-                    Acquire,
-                    Acquire,
-                    |l| {
-                        if l > 0 {
-                            Some(l - 1)
-                        } else {
-                            None
-                        }
-                    }
-                );
+            if queues_len > 1 {
+                if id == &self.inner.skip_queue_id.load(Relaxed) {
+                    // skip the queue that last receive message from.
+                    // but we need to clear this state for avoid starve the busying small-ID sender if other big-ID idle sender exists.
+                    self.inner.skip_queue_id.store(0, Relaxed);
 
-                if let Some(entry) = unsafe { shared.get_mut() } {
-                    return Ok(unsafe { entry.take_inner() });
-                } else {
-                    let guard = Guard::new();
-                    let ptr = shared.get_guarded_ptr(&guard).as_ptr();
-                    let entry = unsafe { &mut *(ptr as *mut Entry<T>) };
-                    return Ok(unsafe { entry.take_inner() });
+                    maybe_skipped = Some((id, queue));
+                    continue;
                 }
+            }
+
+            if let Some(msg) = self.try_pop_from(id, queue) {
+                return Ok(msg);
+            }
+        }
+
+        // now other queue is empty, so try the queue that skipped in previous iterating.
+        if let Some((id, queue)) = maybe_skipped {
+            if let Some(msg) = self.try_pop_from(id, queue) {
+                return Ok(msg);
             }
         }
 
