@@ -2,7 +2,7 @@
 
 use core::sync::atomic::{
     AtomicBool,
-    AtomicUsize,
+    {AtomicUsize, AtomicU8},
     Ordering::{Relaxed, Acquire, SeqCst},
 };
 
@@ -26,6 +26,12 @@ pub enum ChanError {
     /// Channel is closed.
     Closed,
 
+    /// No permission to send
+    RecvOnly,
+
+    /// No permission to recv
+    SendOnly,
+
     /// Unexpected Null sdd::Ptr return by Queue::pop()
     NullPtr,
 
@@ -41,6 +47,8 @@ impl core::fmt::Display for ChanError {
                 Full => "Chan is Full",
                 Empty => "Chan is Empty",
                 Closed => "Chan is Closed",
+                RecvOnly => "Chan is Receiver but try to sending",
+                SendOnly => "Chan is Sender but try to receiving",
                 NullPtr => "Chan::try_recv got Null Ptr",
                 Other(s) => {
                     f.write_str("Chan Unknown Error: ")?;
@@ -58,7 +66,7 @@ struct ChanInner<T: 'static> {
     queues: TreeIndex<usize, Arc<Queue<T>>>, // sender_id -> Queue<T>
     len: AtomicUsize,
     size: Option<usize>,
-    closed: AtomicBool,
+    global_closed: AtomicBool,
     chan_id_counter: AtomicUsize,
 }
 unsafe impl<T> Send for ChanInner<T> {}
@@ -70,7 +78,7 @@ impl<T> ChanInner<T> {
             queues: Default::default(),
             len: AtomicUsize::new(0),
             size,
-            closed: AtomicBool::new(false),
+            global_closed: AtomicBool::new(false),
             chan_id_counter: AtomicUsize::new(100),
         }
     }
@@ -99,8 +107,9 @@ impl<T> ChanInner<T> {
 #[derive(Debug)]
 pub struct Chan<T: 'static> {
     id: usize,
-    dropped: bool,
+    flag: Arc<AtomicU8>,
     inner: Arc<ChanInner<T>>,
+    dropped: bool,
 }
 unsafe impl<T> Send for Chan<T> {}
 unsafe impl<T> Sync for Chan<T> {}
@@ -118,9 +127,11 @@ impl<T> Drop for Chan<T> {
 
 impl<T> Clone for Chan<T> {
     fn clone(&self) -> Self {
+        let flag = self.flag();
         let inner = self.inner.clone();
         let id = inner.gen_id();
-        Self::init(id, inner)
+
+        Self::init(id, flag, inner)
     }
 }
 
@@ -131,10 +142,23 @@ impl<T> Default for Chan<T> {
 }
 
 impl<T> Chan<T> {
-    fn init(id: usize, inner: Arc<ChanInner<T>>) -> Self {
+    /// flag value for Receive message only
+    pub const RECV_ONLY: u8 = b'r';
+
+    /// flag value for Send only
+    pub const SEND_ONLY: u8 = b'w';
+
+    /// flag value for Receive and Send message (default flag)
+    pub const RECV_SEND: u8 = b'+';
+
+    /// flag value for Closed
+    pub const CLOSED:    u8 = b'c';
+
+    fn init(id: usize, flag: u8, inner: Arc<ChanInner<T>>) -> Self {
         let _ = inner.queues.insert(id, Default::default());
         Self {
             id,
+            flag: Arc::new(AtomicU8::new(flag)),
             inner,
             dropped: false,
         }
@@ -144,7 +168,28 @@ impl<T> Chan<T> {
     pub fn new(size: Option<usize>) -> Self {
         let inner = Arc::new(ChanInner::new(size));
         let id = inner.gen_id();
-        Self::init(id, inner)
+        Self::init(id, Self::RECV_SEND, inner)
+    }
+
+    /// get current flag of this channel.
+    pub fn flag(&self) -> u8 {
+        self.flag.load(Relaxed)
+    }
+
+    fn set_flag(&self, flag: u8) {
+        if self.is_closed() {
+            return;
+        }
+        self.flag.store(flag, Relaxed);
+    }
+
+    /// restrict this Chan instance for receive message only.
+    pub fn recv_only(&self) {
+        self.set_flag(Self::RECV_ONLY);
+    }
+    /// restrict this Chan instance for send message only.
+    pub fn send_only(&self) {
+        self.set_flag(Self::SEND_ONLY);
     }
 
     /// get current number of senders. this internally calls [`TreeIndex::len()`] so the time complexity is `O(N)`.
@@ -163,7 +208,11 @@ impl<T> Chan<T> {
             return true;
         }
 
-        if self.inner.closed.load(Relaxed) {
+        if self.inner.global_closed.load(Relaxed) {
+            return true;
+        }
+
+        if self.flag() == Self::CLOSED {
             return true;
         }
 
@@ -173,11 +222,13 @@ impl<T> Chan<T> {
     /// closing this sender and remove it from global register.
     pub fn close(&self) {
         let _ = self.inner.queues.remove(&self.id);
+        self.set_flag(Self::CLOSED);
     }
 
     /// globally closing this channel so all senders will no longer able to send messages.
     pub fn close_all(&self) {
-        self.inner.closed.store(true, Relaxed);
+        self.close();
+        self.inner.global_closed.store(true, Relaxed);
         self.inner.queues.clear();
     }
 
@@ -186,6 +237,11 @@ impl<T> Chan<T> {
         if self.is_closed() {
             return Err(ChanError::Closed);
         }
+
+        if self.flag() == Self::RECV_ONLY {
+            return Err(ChanError::RecvOnly);
+        }
+
         if let Some(size) = self.inner.size {
             if self.len() >= size {
                 return Err(ChanError::Full);
@@ -225,6 +281,10 @@ impl<T> Chan<T> {
     pub fn try_recv(&self) -> Result<T, ChanError> {
         if self.is_closed() {
             return Err(ChanError::Closed);
+        }
+
+        if self.flag() == Self::SEND_ONLY {
+            return Err(ChanError::SendOnly);
         }
 
         let guard = Guard::new();
