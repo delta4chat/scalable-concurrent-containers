@@ -100,7 +100,7 @@ impl<T> ChanInner<T> {
 ///
 /// However, in the event that multiple senders are active concurrently, there is unable to guarantee the ordering of messages.
 ///
-/// # in the causes of multi-senders
+/// # in the case of multi-senders
 /// If the `rand` feature was not enabled (by default), then the Sender with the smallest ID would be prioritized over the others (the default behavior of [`TreeIndex::iter()`]), which could starve the other Sender with the larger ID.
 ///
 /// if enables the `rand` feature, then [`rand::seq::SliceRandom::shuffle`](https://docs.rs/rand/0.9.0/rand/seq/trait.SliceRandom.html#tymethod.shuffle) is used for shuffled disorderly iterating, which should ensure some degree of fairness. 
