@@ -605,11 +605,18 @@ impl<T> Chan<T> {
             }
 
             if let Some(entry) = unsafe { shared.get_mut() } {
+                #[cfg(test)]
+                eprintln!("(preferred) got message {entry:p} by shared.get_mut()");
+
                 return Some(unsafe { entry.take_inner() });
             } else {
                 let guard = Guard::new();
                 let ptr = shared.get_guarded_ptr(&guard).as_ptr();
                 let entry = unsafe { &mut *(ptr as *mut Entry<T>) };
+
+                #[cfg(test)]
+                eprintln!("(less safe) got message {entry:p} by pointer deref cast");
+
                 return Some(unsafe { entry.take_inner() });
             }
         }
@@ -703,6 +710,8 @@ impl<T> Chan<T> {
     }
 
     /// Asynchronous waiting until all queued messages (sent by this ID) is handled properly.
+    ///
+    /// # Warning: call this with same thread that receives message from this channel will causes dead lock!
     #[inline]
     pub fn wait(&self) -> ChanWait<T> {
         ChanWait(self.clone_without_change_id())
@@ -710,6 +719,8 @@ impl<T> Chan<T> {
 
     /// Synchronous waiting until all queued messages (sent by this ID) is handled properly.
     /// internally it calls `block_on(self.recv())`
+    ///
+    /// # Warning: call this with same thread that receives message from this channel will causes dead lock!
     #[inline]
     pub fn wait_blocking(&self) {
         block_on(self.wait(), None)
@@ -823,6 +834,14 @@ mod test {
         let ch: Chan<u16> = Default::default();
         ch.send(1).unwrap();
         assert_eq!(ch.try_recv(), Err(ChanError::Empty))
+    }
+
+    #[test]
+    fn must_recv_from_other() {
+        let ch: Chan<u16> = Default::default();
+        let other_ch = ch.clone();
+        other_ch.send(1).unwrap();
+        assert_eq!(ch.try_recv(), Ok(1))
     }
 
     #[test]
