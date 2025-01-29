@@ -5,9 +5,21 @@ use core::sync::atomic::{
     {AtomicUsize, AtomicU8},
     Ordering::{Relaxed, Acquire, SeqCst},
 };
+use core::future::Future;
+use core::task::{Poll, Context, Waker};
+use core::fmt::{self, Formatter};
+use core::pin::{pin, Pin};
 
 extern crate alloc;
 use alloc::sync::Arc;
+
+mod orig_std {
+    extern crate std;
+    pub use std::task::Wake;
+    pub use std::thread::{self, Thread};
+    pub use std::time::Duration;
+}
+use orig_std::*;
 
 use crate::tree_index::TreeIndex;
 use crate::Queue;
@@ -110,9 +122,9 @@ pub enum ChanError {
     Other(String),
 }
 
-impl core::fmt::Display for ChanError {
+impl fmt::Display for ChanError {
     #[inline]
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
         use ChanError::*;
         f.write_str(
             match self {
@@ -121,7 +133,7 @@ impl core::fmt::Display for ChanError {
                 Closed => "Chan is Closed",
                 RecvOnly => "Chan is Receiver but try to sending",
                 SendOnly => "Chan is Sender but try to receiving",
-                NullPtr => "Chan::try_recv got Null Ptr",
+                NullPtr => "Chan::try_recv() got Null Ptr",
                 Other(s) => {
                     f.write_str("Chan Unknown Error: ")?;
                     return f.write_str(&s);
@@ -135,9 +147,9 @@ impl core::error::Error for ChanError {}
 
 #[derive(Debug)]
 struct ChanInner<T: 'static> {
-    skip_queue_id: AtomicUsize,
-    queues: TreeIndex<usize, Arc<Queue<T>>>, // sender_id -> Queue<T>
-    wakers: Queue<core::task::Waker>,
+    skip_id: AtomicUsize,
+    senders: TreeIndex<usize, Arc<(Queue<T>, Queue<Waker>)>>, // sender_id -> Queue<T>
+    wakers: Queue<Waker>,
     len: AtomicUsize,
     size: Option<usize>,
     global_closed: AtomicBool,
@@ -150,8 +162,8 @@ impl<T> ChanInner<T> {
     #[inline]
     fn new(size: Option<usize>) -> Self {
         Self {
-            skip_queue_id: AtomicUsize::new(0), // zero is invalid value due to chan_id start from 100.
-            queues: Default::default(),
+            skip_id: AtomicUsize::new(0), // zero is invalid value due to chan_id start from 100.
+            senders: Default::default(),
             wakers: Default::default(),
             len: AtomicUsize::new(0),
             size,
@@ -176,7 +188,7 @@ impl<T> ChanInner<T> {
     }
 
     #[inline]
-    fn add_waker(&self, waker: core::task::Waker) {
+    fn add_waker(&self, waker: Waker) {
         self.wakers.push(waker);
     }
 
@@ -234,8 +246,10 @@ impl<T> ChanInner<T> {
 pub struct Chan<T: 'static> {
     id: usize,
     flag: Arc<AtomicU8>,
+    maybe_sender: Option<Arc<(Queue<T>, Queue<Waker>)>>,
     inner: Arc<ChanInner<T>>,
     dropped: bool,
+    avoid_drop: bool,
 }
 unsafe impl<T> Send for Chan<T> {}
 unsafe impl<T> Sync for Chan<T> {}
@@ -243,6 +257,17 @@ unsafe impl<T> Sync for Chan<T> {}
 impl<T> Drop for Chan<T> {
     #[inline]
     fn drop(&mut self) {
+        if self.avoid_drop {
+            return;
+        }
+
+        if Arc::get_mut(&mut self.inner).is_none() || Arc::get_mut(&mut self.flag).is_none() {
+            return;
+        }
+
+        #[cfg(test)]
+        eprintln!("called drop: id={}", self.id);
+
         if self.dropped {
             return;
         }
@@ -285,13 +310,22 @@ impl<T> Chan<T> {
 
     #[inline]
     fn init(id: usize, flag: u8, inner: Arc<ChanInner<T>>) -> Self {
-        let _ = inner.queues.insert(id, Default::default());
-        Self {
+        let mut this = Self {
             id,
             flag: Arc::new(AtomicU8::new(flag)),
+            maybe_sender: None,
             inner,
             dropped: false,
+            avoid_drop: false,
+        };
+
+        if this.is_sender() {
+            let sender: Arc<(Queue<T>, Queue<Waker>)> = Arc::new(Default::default());
+            this.maybe_sender = Some(sender.clone());
+            let _ = this.inner.senders.insert(id, sender);
         }
+
+        this
     }
 
     /// create a Channel with optional size (max length of queued messages)
@@ -344,23 +378,34 @@ impl<T> Chan<T> {
     }
 
     #[inline]
-    fn set_flag(&self, flag: u8) {
+    fn set_flag(&self, flag: u8) -> bool {
         if self.is_closed() {
-            return;
+            false
+        } else {
+            self.flag.store(flag, Relaxed);
+            true
         }
-        self.flag.store(flag, Relaxed);
     }
 
     /// restrict this Chan instance for receive message only.
     #[inline]
-    pub fn recv_only(&self) {
-        self.set_flag(Self::RECV_ONLY);
+    pub fn recv_only(&self) -> bool {
+        if self.flag() == Self::SEND_ONLY {
+            false
+        } else {
+            let _ = self.inner.senders.remove(&self.id);
+            self.set_flag(Self::RECV_ONLY)
+        }
     }
 
     /// restrict this Chan instance for send message only.
     #[inline]
-    pub fn send_only(&self) {
-        self.set_flag(Self::SEND_ONLY);
+    pub fn send_only(&self) -> bool {
+        if self.flag() == Self::RECV_ONLY {
+            false
+        } else {
+            self.set_flag(Self::SEND_ONLY)
+        }
     }
 
     /// checks whether this channel is bidirectional (can send and receive messages)
@@ -384,7 +429,7 @@ impl<T> Chan<T> {
     /// get current number of senders. this internally calls [`TreeIndex::len()`] so the time complexity is `O(N)`.
     #[inline]
     pub fn senders(&self) -> usize {
-        self.inner.queues.len()
+        self.inner.senders.len()
     }
 
     /// get the current length of queued messages in this channel.
@@ -396,25 +441,54 @@ impl<T> Chan<T> {
     /// checks whether this channel closed.
     #[inline]
     pub fn is_closed(&self) -> bool {
+        #[cfg(test)]
+        let id = self.id;
+
         if self.dropped {
+            #[cfg(test)]
+            eprintln!("{id} is closed by Drop");
+
             return true;
         }
 
         if self.inner.global_closed.load(Relaxed) {
+            #[cfg(test)]
+            eprintln!("{id} is closed by global_closed");
+
             return true;
         }
 
         if self.flag() == Self::CLOSED {
+            #[cfg(test)]
+            eprintln!("{id} is closed by flag");
+
             return true;
         }
 
-        ! self.inner.queues.contains(&self.id)
+        if self.is_sender() {
+            if self.inner.senders.contains(&self.id) {
+                #[cfg(test)]
+                eprintln!("{id} isclosed false (senders contains)");
+
+                false
+            } else {
+                #[cfg(test)]
+                eprintln!("{id} isclosed true (senders contains)");
+
+                true
+            }
+        } else {
+            #[cfg(test)]
+            eprintln!("{id} isclosed false (final)");
+
+            false
+        }
     }
 
     /// closing this sender and remove it from global register.
     #[inline]
     pub fn close(&self) {
-        let _ = self.inner.queues.remove(&self.id);
+        let _ = self.inner.senders.remove(&self.id);
         self.set_flag(Self::CLOSED);
     }
 
@@ -423,7 +497,7 @@ impl<T> Chan<T> {
     pub fn close_all(&self) {
         self.close();
         self.inner.global_closed.store(true, Relaxed);
-        self.inner.queues.clear();
+        self.inner.senders.clear();
     }
 
     /// send message.
@@ -444,12 +518,7 @@ impl<T> Chan<T> {
         }
 
         let queue =
-            match
-                self.inner.queues.peek_with(&self.id, |k, v| {
-                    assert_eq!(k, &self.id);
-                    v.clone()
-                })
-            {
+            match self.queue() {
                 Some(q) => q,
                 _ => {
                     return Err(ChanError::Closed);
@@ -492,11 +561,27 @@ impl<T> Chan<T> {
         Ok(())
     }
 
+    fn sender(&self) -> Option<&(Queue<T>, Queue<Waker>)> {
+        if let Some(ref sender) = self.maybe_sender {
+            Some(&*sender)
+        } else {
+            None
+        }
+    }
+
+    fn queue(&self) -> Option<&Queue<T>> {
+        self.sender().map(|x| { &x.0 })
+    }
+    fn wakers(&self) -> Option<&Queue<Waker>> {
+        self.sender().map(|x| { &x.1 })
+    }
+
     #[inline]
-    fn try_pop_from(&self, id: &usize, queue: &Arc<Queue<T>>) -> Option<T> {
+    fn try_pop_from(&self, id: &usize, sender: &Arc<(Queue<T>, Queue<Waker>)>) -> Option<T> {
+        let (queue, wakers) = &**sender;
         if let Some(mut shared) = queue.pop() {
             // received message from this queue, skipping it after (if multi senders exists)
-            self.inner.skip_queue_id.store(*id, Relaxed);
+            self.inner.skip_id.store(*id, Relaxed);
 
             let _ = self.inner.len.fetch_update(
                 Acquire,
@@ -509,6 +594,14 @@ impl<T> Chan<T> {
                     }
                 }
             );
+
+            if false {
+                self.wakers();
+            }
+
+            while let Some(waker) = wakers.pop() {
+                waker.wake_by_ref();
+            }
 
             if let Some(entry) = unsafe { shared.get_mut() } {
                 return Some(unsafe { entry.take_inner() });
@@ -536,46 +629,46 @@ impl<T> Chan<T> {
         }
 
         let guard = Guard::new();
-        let queues: Vec<(&usize, &Arc<Queue<T>>)> = self.inner.queues.iter(&guard).collect();
+        let senders: Vec<(&usize, &Arc<(Queue<T>, Queue<Waker>)>)> = self.inner.senders.iter(&guard).collect();
 
         #[cfg(feature="rand")]
-        let mut queues = queues;
+        let mut senders = senders;
 
         #[cfg(feature="rand")]
         {
             use rand::seq::SliceRandom;
             let mut rng = rand::thread_rng();
-            queues.shuffle(&mut rng);
+            senders.shuffle(&mut rng);
         }
 
-        let queues_len = queues.len();
+        let senders_len = senders.len();
         let mut maybe_skipped = None;
-        for (id, queue) in queues.into_iter() {
+        for (id, sender) in senders.into_iter() {
             if id == &self.id {
                 // skip myself.
                 // so a thread both sending and receiving will only receive messages from other senders.
                 continue;
             }
 
-            if queues_len > 1 {
-                if id == &self.inner.skip_queue_id.load(Relaxed) {
+            if senders_len > 1 {
+                if id == &self.inner.skip_id.load(Relaxed) {
                     // skip the queue that last receive message from.
                     // but we need to clear this state for avoid starve the busying small-ID sender if other big-ID idle sender exists.
-                    self.inner.skip_queue_id.store(0, Relaxed);
+                    self.inner.skip_id.store(0, Relaxed);
 
-                    maybe_skipped = Some((id, queue));
+                    maybe_skipped = Some((id, sender));
                     continue;
                 }
             }
 
-            if let Some(msg) = self.try_pop_from(id, queue) {
+            if let Some(msg) = self.try_pop_from(id, sender) {
                 return Ok(msg);
             }
         }
 
         // now other queue is empty, so try the queue that skipped in previous iterating.
-        if let Some((id, queue)) = maybe_skipped {
-            if let Some(msg) = self.try_pop_from(id, queue) {
+        if let Some((id, sender)) = maybe_skipped {
+            if let Some(msg) = self.try_pop_from(id, sender) {
                 return Ok(msg);
             }
         }
@@ -585,11 +678,14 @@ impl<T> Chan<T> {
 
     #[inline]
     fn clone_without_change_id(&self) -> Self {
-        let flag = self.flag();
-        let inner = self.inner.clone();
-        let id = self.id;
-
-        Self::init(id, flag, inner)
+        Self {
+            id: self.id,
+            flag: self.flag.clone(),
+            inner: self.inner.clone(),
+            maybe_sender: self.maybe_sender.clone(),
+            dropped: self.dropped,
+            avoid_drop: true, // do not call destructor
+        }
     }
 
     /// Asynchronous receive message from this channel
@@ -603,19 +699,21 @@ impl<T> Chan<T> {
     pub fn recv_blocking(&self) -> Result<T, ChanError> {
         block_on(self.recv())
     }
+
+    /// Asynchronous waiting until all queued messages (sent by this ID) is handled properly.
+    pub fn wait(&self) -> ChanWait<T> {
+        ChanWait(self.clone_without_change_id())
+    }
+
+    /// Synchronous waiting until all queued messages (sent by this ID) is handled properly.
+    /// internally it calls `block_on(self.recv())`
+    pub fn wait_blocking(&self) {
+        block_on(self.wait())
+    }
 }
 
 /// NOTE: not tested WIP
-fn block_on<T>(fut: impl core::future::Future<Output=T>) -> T {
-    use core::task::Context;
-    use core::task::Poll::*;
-    use core::pin::pin;
-
-    extern crate std;
-    use std::thread::{self, Thread};
-    use std::task::Wake;
-    use std::time::Duration;
-
+pub(self) fn block_on<T>(fut: impl core::future::Future<Output=T>) -> T {
     struct ThreadWaker(Thread);
     impl Wake for ThreadWaker {
         fn wake(self: Arc<Self>) {
@@ -629,17 +727,18 @@ fn block_on<T>(fut: impl core::future::Future<Output=T>) -> T {
     let mut fut = pin!(fut);
     loop {
         match fut.as_mut().poll(&mut ctx) {
-            Ready(ret) => {
+            Poll::Ready(ret) => {
                 return ret;
             },
             _ => {
-                thread::park_timeout(Duration::from_secs(10));
+                thread::park_timeout(Duration::from_secs(3));
             }
         }
     }
 }
 
-/// Chan::recv() returns this type that implements [`core::future::Future`] for awaiting
+/// [`Chan::recv()`] returns this type that implements [`core::future::Future`] for awaiting
+#[derive(Debug)]
 pub struct ChanRecv<T: 'static>(
     Chan<T>
 );
@@ -648,10 +747,9 @@ impl<T> core::future::Future for ChanRecv<T> {
 
     #[inline]
     fn poll(
-        self: core::pin::Pin<&mut Self>,
-        ctx: &mut core::task::Context<'_>
-    ) -> core::task::Poll<Self::Output> {
-        use core::task::Poll;
+        self: Pin<&mut Self>,
+        ctx: &mut Context<'_>
+    ) -> Poll<Self::Output> {
         match self.0.try_recv() {
             Ok(msg) => Poll::Ready(Ok(msg)),
             Err(err) => {
@@ -667,3 +765,99 @@ impl<T> core::future::Future for ChanRecv<T> {
     }
 }
 
+/// [`Chan::wait()`] returns this type that implements [`core::future::Future`] for awaiting
+#[derive(Debug)]
+pub struct ChanWait<T: 'static>(
+    Chan<T>,
+);
+impl<T> Future for ChanWait<T> {
+    type Output = ();
+
+    #[inline]
+    fn poll(
+        self: Pin<&mut Self>,
+        ctx: &mut Context<'_>
+    ) -> Poll<Self::Output> {
+        if self.0.is_closed() {
+            return Poll::Ready(());
+        }
+
+        let (queue, wakers) =
+            match self.0.sender() {
+                Some(v) => v,
+                _ => {
+                    return Poll::Ready(());
+                }
+            };
+        if queue.is_empty() {
+            Poll::Ready(())
+        } else {
+            let waker = ctx.waker();
+            wakers.push(waker.clone());
+            Poll::Pending
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn must_not_recv_from_self() {
+        let ch: Chan<u16> = Default::default();
+        ch.send(1).unwrap();
+        assert_eq!(ch.try_recv(), Err(ChanError::Empty))
+    }
+
+    #[test]
+    fn concurrent() {
+        extern crate std;
+        use std::thread;
+
+        let ch: Chan<(u16, &'static str)> = Default::default();
+        let mut thrs = vec![];
+        for i in 0..3 {
+            let ch = ch.clone();
+            thrs.push(thread::spawn(move || {
+                ch.send((i, "msg 1 hello")).unwrap();
+                if i == 0 {
+                    let _ = dbg!(ch.try_recv());
+                }
+                ch.send((i, "msg 2 world")).unwrap();
+                ch.send((i, "msg 3 good bye")).unwrap();
+
+                ch.wait_blocking();
+                eprintln!("thread {i} exiting");
+            }));
+        }
+
+        ch.recv_only();
+        let mut fails = 0;
+        loop {
+            dbg!(&ch.is_closed());
+            let r = ch.recv();
+            dbg!(&r);
+            let r = block_on(r);
+            if r == Err(ChanError::Empty) || r == Err(ChanError::Closed) {
+                break;
+            }
+            if r.is_err() {
+                fails += 1;
+                if fails >= 2 {
+                    r.unwrap();
+                    unreachable!();
+                } else {
+                    continue;
+                }
+            }
+            r.unwrap();
+        }
+
+        ch.close_all();
+
+        for thr in thrs.into_iter() {
+            let _ = dbg!(thr.join());
+        }
+    }
+}
