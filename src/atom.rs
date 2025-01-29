@@ -33,6 +33,33 @@ impl<T: ?Sized + core::fmt::Display> core::fmt::Display for Atom<T> {
     }
 }
 
+#[cfg(feature="serde")]
+mod _serde_impl {
+    use super::*;
+
+    use serde::{Serialize, Serializer};
+    use serde::{Deserialize, Deserializer};
+
+    impl<T: ?Sized + Serialize> Serialize for Atom<T> {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            if let Some(arc_val) = self.get() {
+                let val: &T = &*arc_val;
+                val.serialize(serializer)
+            } else {
+                use serde::ser::Error;
+                Err(S::Error::custom("Atom<T> does not have the inner value!"))
+            }
+        }
+    }
+
+    impl<'d, T: 'static + Sized + Deserialize<'d>> Deserialize<'d> for Atom<T> {
+        fn deserialize<D: Deserializer<'d>>(deserializer: D) -> Result<Self, D::Error> {
+            let val = T::deserialize(deserializer)?;
+            Ok(Self::new(val))
+        }
+    }
+}
+
 impl<T: ?Sized> From<&Atom<T>> for Option<Arc<T>> {
     fn from(val: &Atom<T>) -> Option<Arc<T>> {
         val.get()

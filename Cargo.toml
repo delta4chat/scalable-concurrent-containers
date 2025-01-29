@@ -52,3 +52,26 @@ harness = false
 [[bench]]
 name = "tree_index"
 harness = false
+
+[profile.dev]
+panic = "unwind"
+opt-level = 2
+lto = "off"
+#strip = "none"
+codegen-units = 256
+overflow-checks = true
+debug-assertions = true
+debug = "limited"
+incremental = true
+
+[profile.release]
+panic = "unwind"
+opt-level = 3
+lto = true
+strip = true
+codegen-units = 1
+overflow-checks = true
+debug-assertions = false
+debug = 1
+incremental = false
+
