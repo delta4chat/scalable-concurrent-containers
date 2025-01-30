@@ -150,12 +150,31 @@ impl fmt::Display for ChanError {
 
 impl core::error::Error for ChanError {}
 
+/// the Ordering of Chan
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum ChanOrdering {
+    /// un-ordered mode (or "relaxed" mode) is unable to guarantee the ordering of messages.
+    Unordered,
+
+    /// FIFO mode is guarantee the ordering of messages is "first-in, first-out".
+    FIFO,
+
+    /// LIFO modme is guarantee the ordering of messages is "last-in, first-out".
+    LIFO,
+}
+impl Default for ChanOrdering {
+    fn default() -> Self {
+        Self::Unordered
+    }
+}
+
 type Sender<T> = (Atom<Instant>, Queue<T>, Queue<Waker>);
 type ArcSender<T> = Arc<Sender<T>>;
 type Wakers = Queue<Waker>;
 
 #[derive(Debug)]
 struct ChanInner<T: 'static> {
+    ordering: Atom<ChanOrdering>,
                       // sender_id -> (last_pop_time, queued_messages, rx_wakers)
     senders: TreeIndex<usize, ArcSender<T>>,
     wakers: Wakers,
@@ -171,6 +190,7 @@ impl<T> ChanInner<T> {
     #[inline]
     fn new(size: Option<usize>) -> Self {
         Self {
+            ordering: Atom::new(Default::default()),
             senders: Default::default(),
             wakers: Default::default(),
             len: AtomicUsize::new(0),
@@ -181,18 +201,53 @@ impl<T> ChanInner<T> {
     }
 
     #[inline]
+    fn ordering(&self) -> ChanOrdering {
+        *(self.ordering.get().unwrap())
+    }
+
+    #[inline]
+    fn max_id(&self) -> Option<usize> {
+        let guard = Guard::new();
+        self.senders.iter(&guard).map(|(id, _sender)| { *id }).max()
+    }
+
+    #[inline]
     fn gen_id(&self) -> usize {
-        self.chan_id_counter.fetch_update(
+        match self.ordering() {
+            ChanOrdering::FIFO => {
+                return ID_FIFO;
+            },
+            ChanOrdering::LIFO => {
+                return ID_LIFO;
+            },
+            _ => {}
+        }
+
+        let id = self.chan_id_counter.fetch_update(
             SeqCst,
             SeqCst,
             |c| {
-                if c < usize::MAX {
+                if c < MAX_ID {
                     Some(c + 1)
                 } else {
-                    panic!("Chan ID has been exhausted!")
+                    #[cfg(test)]
+                    eprintln!("Chan ID has been exhausted! trying reset...");
+
+                    let max_id = self.max_id().unwrap_or(MIN_ID);
+                    if max_id < usize::MAX {
+                        #[cfg(test)]
+                        eprintln!("reseting Chan ID Counter to {}", max_id + 1);
+
+                        Some(max_id + 1)
+                    } else {
+                        panic!("Chan ID has been exhausted! most IDs used by active channels, unable to reset ID back to lower value...");
+                    }
                 }
             }
-        ).unwrap()
+        ).unwrap();
+
+        assert!(! self.senders.contains(&id));
+        id
     }
 
     #[inline]
@@ -239,6 +294,33 @@ impl<T> ChanInner<T> {
         wakes
     }
 }
+
+/// Invalid Chan ID
+pub const ID_INVALID: usize = 0;
+
+/// Special Chan ID for [`ChanOrdering::FIFO`]
+pub const ID_FIFO: usize = 1;
+
+/// Special Chan ID for [`ChanOrdering::LIFO`]
+pub const ID_LIFO: usize = 2;
+
+/// Minimum Chan ID for [`ChanOrdering::Unordered`]
+pub const MIN_ID: usize = 100;
+
+/// Maximum Chan ID for [`ChanOrdering::Unordered`]
+pub const MAX_ID: usize = usize::MAX;
+
+/// flag value for Receive message only
+pub const RECV_ONLY: u8 = b'r';
+
+/// flag value for Send only
+pub const SEND_ONLY: u8 = b'w';
+
+/// flag value for Receive and Send message (default flag)
+pub const RECV_SEND: u8 = b'+';
+
+/// flag value for Closed
+pub const CLOSED:    u8 = b'c';
 
 /// (Experimental) multi-producer, multi-consumer (MPMC) channel backend utilizes a [`TreeIndex`] and [`Queue`], where each message can be received by only one of all existing consumers.
 ///
@@ -289,7 +371,11 @@ impl<T> Clone for Chan<T> {
         let inner = self.inner.clone();
         let id = inner.gen_id();
 
-        Self::init(id, flag, inner)
+        let mut this = Self::init(id, flag, inner);
+        if id < MIN_ID {
+            this.avoid_drop = true;
+        }
+        this
     }
 }
 
@@ -301,18 +387,6 @@ impl<T> Default for Chan<T> {
 }
 
 impl<T> Chan<T> {
-    /// flag value for Receive message only
-    pub const RECV_ONLY: u8 = b'r';
-
-    /// flag value for Send only
-    pub const SEND_ONLY: u8 = b'w';
-
-    /// flag value for Receive and Send message (default flag)
-    pub const RECV_SEND: u8 = b'+';
-
-    /// flag value for Closed
-    pub const CLOSED:    u8 = b'c';
-
     #[inline]
     fn init(id: usize, flag: u8, inner: Arc<ChanInner<T>>) -> Self {
         let mut this = Self {
@@ -338,7 +412,7 @@ impl<T> Chan<T> {
     pub fn new(size: Option<usize>) -> Self {
         let inner = Arc::new(ChanInner::new(size));
         let id = inner.gen_id();
-        Self::init(id, Self::RECV_SEND, inner)
+        Self::init(id, RECV_SEND, inner)
     }
 
     /// create bounded Channel (limited number of queued messages).
@@ -353,6 +427,21 @@ impl<T> Chan<T> {
         Self::new(None)
     }
 
+    /// get the ordering of messages.
+    #[inline]
+    pub fn ordering(&self) -> ChanOrdering {
+        self.inner.ordering()
+    }
+
+    /// set the ordering of messages.
+    #[inline]
+    pub fn set_ordering(&self, ordering: ChanOrdering) {
+        if ordering == ChanOrdering::LIFO {
+            todo!("LIFO is not implemented yet");
+        }
+        self.inner.ordering.set(ordering);
+    }
+
     /// create two side from this channel: the left side is sender, and the right side is receiver.
     ///
     /// this is does not work if this is not a bidirectional channel.
@@ -360,10 +449,10 @@ impl<T> Chan<T> {
     pub fn split(&self) -> Result<(Chan<T>, Chan<T>), ChanError> {
         let flag = self.flag();
 
-        if flag == Self::RECV_ONLY {
+        if flag == RECV_ONLY {
             return Err(ChanError::RecvOnly);
         }
-        if flag == Self::SEND_ONLY {
+        if flag == SEND_ONLY {
             return Err(ChanError::SendOnly);
         }
 
@@ -376,6 +465,12 @@ impl<T> Chan<T> {
         Ok((sender, receiver))
     }
 
+    /// get the ID of this channel.
+    #[inline]
+    pub fn id(&self) -> &usize {
+        &self.id
+    }
+
     /// get current flag of this channel.
     #[inline]
     pub fn flag(&self) -> u8 {
@@ -384,7 +479,7 @@ impl<T> Chan<T> {
 
     #[inline]
     fn set_flag(&self, flag: u8) -> bool {
-        if self.flag() == Self::CLOSED {
+        if self.flag() == CLOSED {
             false
         } else {
             self.flag.store(flag, Relaxed);
@@ -395,11 +490,11 @@ impl<T> Chan<T> {
     /// restrict this Chan instance for receive message only.
     #[inline]
     pub fn recv_only(&self) -> bool {
-        if self.flag() == Self::SEND_ONLY {
+        if self.flag() == SEND_ONLY {
             false
         } else {
-            let b = self.set_flag(Self::RECV_ONLY);
-            if b {
+            let b = self.set_flag(RECV_ONLY);
+            if b && self.ordering() == ChanOrdering::Unordered {
                 let _ = self.inner.senders.remove(&self.id);
             }
             b
@@ -409,29 +504,29 @@ impl<T> Chan<T> {
     /// restrict this Chan instance for send message only.
     #[inline]
     pub fn send_only(&self) -> bool {
-        if self.flag() == Self::RECV_ONLY {
+        if self.flag() == RECV_ONLY {
             false
         } else {
-            self.set_flag(Self::SEND_ONLY)
+            self.set_flag(SEND_ONLY)
         }
     }
 
     /// checks whether this channel is bidirectional (can send and receive messages)
     #[inline]
     pub fn is_bidirectional(&self) -> bool {
-        self.flag() == Self::RECV_SEND
+        self.flag() == RECV_SEND
     }
 
     /// checks whether this channel able to receive messages.
     #[inline]
     pub fn is_receiver(&self) -> bool {
-        self.is_bidirectional() || self.flag() == Self::RECV_ONLY
+        self.is_bidirectional() || self.flag() == RECV_ONLY
     }
 
     /// checks whether this channel able to send messages.
     #[inline]
     pub fn is_sender(&self) -> bool {
-        self.is_bidirectional() || self.flag() == Self::SEND_ONLY
+        self.is_bidirectional() || self.flag() == SEND_ONLY
     }
 
     /// get current number of senders. this internally calls [`TreeIndex::len()`] so the time complexity is `O(N)`.
@@ -466,7 +561,7 @@ impl<T> Chan<T> {
             return true;
         }
 
-        if self.flag() == Self::CLOSED {
+        if self.flag() == CLOSED {
             #[cfg(test)]
             eprintln!("{id} is closed by flag");
 
@@ -497,7 +592,7 @@ impl<T> Chan<T> {
     #[inline]
     pub fn close(&self) {
         let _ = self.inner.senders.remove(&self.id);
-        self.set_flag(Self::CLOSED);
+        self.set_flag(CLOSED);
     }
 
     /// globally closing this channel so all senders will no longer able to send messages.
@@ -515,7 +610,7 @@ impl<T> Chan<T> {
             return Err(ChanError::Closed);
         }
 
-        if self.flag() == Self::RECV_ONLY {
+        if self.flag() == RECV_ONLY {
             return Err(ChanError::RecvOnly);
         }
 
@@ -628,11 +723,18 @@ impl<T> Chan<T> {
     /// this is never blocking, if there is no message, it will returns ChanError::Empty.
     #[inline]
     pub fn try_recv(&self) -> Result<T, ChanError> {
+        self.try_recv_from().map(|x| { x.1 })
+    }
+
+    /// try receive message (with Sender ID) from this channel.
+    /// this is never blocking, if there is no message, it will returns ChanError::Empty.
+    #[inline]
+    pub fn try_recv_from(&self) -> Result<(usize, T), ChanError> {
         if self.is_closed() {
             return Err(ChanError::Closed);
         }
 
-        if self.flag() == Self::SEND_ONLY {
+        if self.flag() == SEND_ONLY {
             return Err(ChanError::SendOnly);
         }
 
@@ -651,15 +753,18 @@ impl<T> Chan<T> {
             order
         });
 
+        let ordering = self.ordering();
         for (id, sender) in senders.into_iter() {
-            if id == &self.id {
-                // skip myself.
-                // so a thread both sending and receiving will only receive messages from other senders.
-                continue;
+            if ordering == ChanOrdering::Unordered {
+                if id == &self.id {
+                    // skip myself.
+                    // so a thread both sending and receiving will only receive messages from other senders.
+                    continue;
+                }
             }
 
             if let Some(msg) = self.try_pop_from(id, sender) {
-                return Ok(msg);
+                return Ok((*id, msg));
             }
         }
 
@@ -845,12 +950,24 @@ mod test {
     }
 
     #[test]
-    fn concurrent() {
+    fn concurrent_unordered() {
+        concurrent(ChanOrdering::Unordered)
+    }
+
+    #[test]
+    fn concurrent_fifo() {
+        concurrent(ChanOrdering::FIFO)
+    }
+
+    fn concurrent(ordering: ChanOrdering) {
         extern crate std;
         use std::thread;
         use std::time::{Instant, SystemTime};
 
         let ch: Chan<(u16, &'static str, SystemTime)> = Default::default();
+        if ordering != ChanOrdering::default() {
+            ch.set_ordering(ordering);
+        }
         let mut thrs = vec![];
         for i in 0..3 {
             let ch = ch.clone();
@@ -859,7 +976,7 @@ mod test {
 
                 while started.elapsed() < Duration::from_secs(3) {
                     ch.send((i, "msg 1 hello", SystemTime::now())).unwrap();
-                    if i == 0 {
+                    if ordering == ChanOrdering::Unordered && i == 0 {
                         let _ = dbg!(ch.try_recv());
                     }
                     ch.send((i, "msg 2 world", SystemTime::now())).unwrap();
@@ -869,7 +986,7 @@ mod test {
                 }
 
                 ch.wait_blocking();
-                eprintln!("thread {i} exiting");
+                eprintln!("{ordering:?} thread {i} exiting");
             }));
         }
 
@@ -877,14 +994,14 @@ mod test {
         let mut fails = 0;
         let mut empty = 0;
         for _ in 0..1000 {
-            if dbg!(ch.senders()) == 0 {
+            if dbg!((ordering, ch.senders())).1 == 0 {
                 break;
             }
-            dbg!(&ch.is_closed());
+            dbg!((ordering, &ch.is_closed()));
             let i = Duration::from_secs_f64(1.5);
             let r = ch.recv_timeout(i);
             //dbg!(&r);
-            let r = dbg!(block_on(r, Some(i)));
+            let r = dbg!((ordering, block_on(r, Some(i)))).1;
             if r == Err(ChanError::RecvTimeout) {
                 break;
             }
@@ -913,7 +1030,7 @@ mod test {
         ch.close();
 
         for thr in thrs.into_iter() {
-            let _ = dbg!(thr.join());
+            let _ = dbg!((ordering, thr.join()));
         }
     }
 }
