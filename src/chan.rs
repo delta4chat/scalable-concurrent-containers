@@ -24,7 +24,8 @@ use orig_std::*;
 use crate::atom::Atom;
 use crate::tree_index::TreeIndex;
 use crate::Queue;
-use crate::ebr::Guard;
+use crate::Stack;
+use crate::ebr::{Guard, Shared};
 use crate::linked_list::Entry;
 
 /// another method for create Chan instance.
@@ -110,7 +111,10 @@ pub enum ChanError {
     /// Channel receive timed out.
     RecvTimeout,
 
-    /// Channel is closed.
+    /// Channel is pending close for waiting receiver to processing queued messages. but try to send new message.
+    Closing,
+
+    /// Channel is closed completely and no longer to send or receive.
     Closed,
 
     /// No permission to send
@@ -119,8 +123,11 @@ pub enum ChanError {
     /// No permission to recv
     SendOnly,
 
-    /// Unexpected Null sdd::Ptr return by Queue::pop()
+    /// Unexpected Null [`sdd::Ptr`] return by Queue::pop()
     NullPtr,
+
+    /// [`ChanOrdering`] of ChanPipeline (internal type for wrapping [`Queue`] or [`Stack`]) is does not matches the required ordering.
+    PipelineOrderingMismatched,
 
     /// Other Unknown Error
     Other(String),
@@ -135,10 +142,12 @@ impl fmt::Display for ChanError {
                 Full => "Chan is Full",
                 Empty => "Chan is Empty",
                 RecvTimeout => "Chan is Empty and timed out",
+                Closing => "Chan is Closing but try to send message",
                 Closed => "Chan is Closed",
                 RecvOnly => "Chan is Receiver but try to sending",
                 SendOnly => "Chan is Sender but try to receiving",
                 NullPtr => "Chan::try_recv() got Null Ptr",
+                PipelineOrderingMismatched => "ChanPipeline::ordering() returns ChanOrdering does not matches Chan::ordering()",
                 Other(s) => {
                     f.write_str("Chan Unknown Error: ")?;
                     return f.write_str(&s);
@@ -159,18 +168,111 @@ pub enum ChanOrdering {
     /// FIFO mode is guarantee the ordering of messages is "first-in, first-out".
     FIFO,
 
-    /// LIFO modme is guarantee the ordering of messages is "last-in, first-out".
+    /// LIFO mode is guarantee the ordering of messages is "last-in, first-out".
     LIFO,
 }
+impl ChanOrdering {
+    /// check whether this [`ChanOrdering`] is un-ordered.
+    #[inline]
+    pub const fn is_unordered(&self) -> bool {
+        if let Self::Unordered = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    /// check whether this [`ChanOrdering`] is FIFO.
+    #[inline]
+    pub const fn is_fifo(&self) -> bool {
+        if let Self::FIFO = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    /// check whether this [`ChanOrdering`] is LIFO.
+    #[inline]
+    pub const fn is_lifo(&self) -> bool {
+        if let Self::LIFO = self {
+            true
+        } else {
+            false
+        }
+    }
+}
 impl Default for ChanOrdering {
+    #[inline]
     fn default() -> Self {
         Self::Unordered
     }
 }
 
-type Sender<T> = (Atom<Instant>, Queue<T>, Queue<Waker>);
-type ArcSender<T> = Arc<Sender<T>>;
 type Wakers = Queue<Waker>;
+type Sender<T> = (Atom<Instant>, ChanPipeline<T>, Wakers);
+type ArcSender<T> = Arc<Sender<T>>;
+
+#[derive(Debug)]
+enum ChanPipeline<T: 'static> {
+    FIFO(Queue<T>),
+    LIFO(Stack<T>),
+}
+
+impl<T: 'static> ChanPipeline<T> {
+    #[inline]
+    fn new(ordering: ChanOrdering) -> Self {
+        if ordering.is_lifo() {
+            Self::LIFO(Default::default())
+        } else {
+            Self::FIFO(Default::default())
+        }
+    }
+
+    #[inline]
+    fn ordering(&self) -> ChanOrdering {
+        match self {
+            Self::FIFO(_) => ChanOrdering::FIFO,
+            Self::LIFO(_) => ChanOrdering::LIFO,
+        }
+    }
+
+    #[inline]
+    fn push(&self, msg: T) -> Shared<Entry<T>> {
+        match self {
+            Self::FIFO(queue) => {
+                queue.push(msg)
+            },
+            Self::LIFO(stack) => {
+                stack.push(msg)
+            }
+        }
+    }
+
+    #[inline]
+    fn pop(&self) -> Option<Shared<Entry<T>>> {
+        match self {
+            Self::FIFO(queue) => {
+                queue.pop()
+            },
+            Self::LIFO(stack) => {
+                stack.pop()
+            }
+        }
+    }
+
+    #[inline]
+    fn is_empty(&self) -> bool {
+        match self {
+            Self::FIFO(queue) => {
+                queue.is_empty()
+            },
+            Self::LIFO(stack) => {
+                stack.is_empty()
+            }
+        }
+    }
+}
 
 #[derive(Debug)]
 struct ChanInner<T: 'static> {
@@ -311,16 +413,19 @@ pub const MIN_ID: usize = 100;
 pub const MAX_ID: usize = usize::MAX;
 
 /// flag value for Receive message only
-pub const RECV_ONLY: u8 = b'r';
+pub const RECV_ONLY:  u8 = b'r';
 
 /// flag value for Send only
-pub const SEND_ONLY: u8 = b'w';
+pub const SEND_ONLY:  u8 = b'w';
 
 /// flag value for Receive and Send message (default flag)
-pub const RECV_SEND: u8 = b'+';
+pub const RECV_SEND:  u8 = b'+';
+
+/// flag value for Pending closing: close() called but still have message pending send.
+pub const CLOSE_WAIT: u8 = b'.';
 
 /// flag value for Closed
-pub const CLOSED:    u8 = b'c';
+pub const CLOSED:     u8 = b'c';
 
 /// (Experimental) multi-producer, multi-consumer (MPMC) channel backend utilizes a [`TreeIndex`] and [`Queue`], where each message can be received by only one of all existing consumers.
 ///
@@ -334,7 +439,7 @@ pub const CLOSED:    u8 = b'c';
 pub struct Chan<T: 'static> {
     id: usize,
     flag: Arc<AtomicU8>,
-    maybe_sender: Option<ArcSender<T>>,
+    sender: Atom<Sender<T>>,
     inner: Arc<ChanInner<T>>,
     dropped: bool,
     avoid_drop: bool,
@@ -347,13 +452,13 @@ impl<T> Drop for Chan<T> {
     fn drop(&mut self) {
         if self.avoid_drop {
             #[cfg(test)]
-            eprintln!("avoid drop {}", self.id);
+            eprintln!("avoid drop {}", self.id());
 
             return;
         }
 
         #[cfg(test)]
-        eprintln!("called drop: id={}", self.id);
+        eprintln!("called drop: id={}", self.id(l));
 
         if self.dropped {
             return;
@@ -372,7 +477,9 @@ impl<T> Clone for Chan<T> {
         let id = inner.gen_id();
 
         let mut this = Self::init(id, flag, inner);
-        if id < MIN_ID {
+        this.id = *(this.id()); // override ID if mode is FIFO or LIFO
+
+        if this.id() < &MIN_ID {
             this.avoid_drop = true;
         }
         this
@@ -389,22 +496,14 @@ impl<T> Default for Chan<T> {
 impl<T> Chan<T> {
     #[inline]
     fn init(id: usize, flag: u8, inner: Arc<ChanInner<T>>) -> Self {
-        let mut this = Self {
+        Self {
             id,
             flag: Arc::new(AtomicU8::new(flag)),
-            maybe_sender: None,
+            sender: Default::default(),
             inner,
             dropped: false,
             avoid_drop: false,
-        };
-
-        if this.is_sender() {
-            let sender: Arc<(Atom<Instant>, Queue<T>, Queue<Waker>)> = Arc::new(Default::default());
-            this.maybe_sender = Some(sender.clone());
-            let _ = this.inner.senders.insert(id, sender);
         }
-
-        this
     }
 
     /// create a Channel with optional size (max length of queued messages)
@@ -413,6 +512,25 @@ impl<T> Chan<T> {
         let inner = Arc::new(ChanInner::new(size));
         let id = inner.gen_id();
         Self::init(id, RECV_SEND, inner)
+    }
+
+    #[inline]
+    fn init_sender(&self) {
+        if ! self.is_sender() {
+            return;
+        }
+        
+        self.sender.update_arc(|old| {
+            if old.is_none() {
+                let pipeline = ChanPipeline::new(self.ordering());
+                let sender: Arc<(Atom<Instant>, ChanPipeline<T>, Queue<Waker>)> = Arc::new((Default::default(), pipeline, Default::default()));
+                let _ = self.inner.senders.insert(self.id, sender.clone());
+
+                Some(sender)
+            } else {
+                None
+            }
+        });
     }
 
     /// create bounded Channel (limited number of queued messages).
@@ -434,12 +552,15 @@ impl<T> Chan<T> {
     }
 
     /// set the ordering of messages.
+    ///
+    /// # Note: this method should be called before trying sending or receiving message from channel.
     #[inline]
-    pub fn set_ordering(&self, ordering: ChanOrdering) {
-        if ordering == ChanOrdering::LIFO {
-            todo!("LIFO is not implemented yet");
+    pub fn set_ordering(&self, ordering: ChanOrdering) -> bool {
+        if self.senders() > 0 {
+            return false;
         }
         self.inner.ordering.set(ordering);
+        true
     }
 
     /// create two side from this channel: the left side is sender, and the right side is receiver.
@@ -465,9 +586,22 @@ impl<T> Chan<T> {
         Ok((sender, receiver))
     }
 
-    /// get the ID of this channel.
+    /// get the ID of this channel. the returned value is reference for hint the value is channel-specified and depends this Chan instance.
+    ///
+    /// # NOTE: for this Chan instance and all it's clone, the ID is uniquely. other different instance will reuse the ID.
+    ///
+    /// ## NOTE: there is two Special ID (fixed) for any channel that using [`ChanOrdering::FIFO`] or [`ChanOrdering::LIFO`]. because there is just a single message-queue in FIFO or LIFO mode.
     #[inline]
     pub fn id(&self) -> &usize {
+        let ordering = self.ordering();
+
+        if ordering.is_fifo() {
+            return &ID_FIFO;
+        }
+        if ordering.is_lifo() {
+            return &ID_LIFO;
+        }
+
         &self.id
     }
 
@@ -479,12 +613,25 @@ impl<T> Chan<T> {
 
     #[inline]
     fn set_flag(&self, flag: u8) -> bool {
-        if self.flag() == CLOSED {
-            false
-        } else {
-            self.flag.store(flag, Relaxed);
-            true
+        let old = self.flag();
+
+        if old == flag {
+            return true;
         }
+
+        if old == CLOSED {
+            return false;
+        }
+
+        if old == CLOSE_WAIT {
+            if flag != CLOSED {
+                return false;
+            }
+        }
+        
+        self.flag.store(flag, Relaxed);
+
+        true
     }
 
     /// restrict this Chan instance for receive message only.
@@ -495,7 +642,7 @@ impl<T> Chan<T> {
         } else {
             let b = self.set_flag(RECV_ONLY);
             if b && self.ordering() == ChanOrdering::Unordered {
-                let _ = self.inner.senders.remove(&self.id);
+                let _ = self.inner.senders.remove(self.id());
             }
             b
         }
@@ -541,17 +688,24 @@ impl<T> Chan<T> {
         self.inner.len.load(Acquire)
     }
 
-    /// checks whether this channel closed.
+
+    /// checks whether this channel is pending closing.
+    #[inline]
+    pub fn is_closing(&self) -> bool {
+        self.flag() == CLOSE_WAIT
+    }
+
+    /// checks whether this channel is closed.
     #[inline]
     pub fn is_closed(&self) -> bool {
         #[cfg(test)]
-        let id = self.id;
+        let id = self.id();
 
         if self.dropped {
             #[cfg(test)]
-            eprintln!("{id} is closed by Drop");
+            eprintln!("{id} is close() called by Drop");
 
-            return true;
+            //return true; // maybe closing
         }
 
         if self.inner.global_closed.load(Relaxed) {
@@ -569,7 +723,7 @@ impl<T> Chan<T> {
         }
 
         if self.is_sender() {
-            if self.inner.senders.contains(&self.id) {
+            if self.inner.senders.contains(self.id()) {
                 #[cfg(test)]
                 eprintln!("{id} is closed? false (senders contains)");
 
@@ -590,9 +744,23 @@ impl<T> Chan<T> {
 
     /// closing this sender and remove it from global register.
     #[inline]
-    pub fn close(&self) {
-        let _ = self.inner.senders.remove(&self.id);
-        self.set_flag(CLOSED);
+    pub fn close(&self) -> bool {
+        if self.is_sender() {
+            match self.sender() {
+                Some(sender) => {
+                    let (_last_pop_time, pipeline, _wakers) = &*sender;
+
+                    if ! pipeline.is_empty() {
+                        self.inner.wake_all();
+                        self.set_flag(CLOSE_WAIT);
+                        return false;
+                    }
+                },
+                _ => {}
+            }
+            let _ = self.inner.senders.remove(self.id());
+        }
+        self.set_flag(CLOSED)
     }
 
     /// globally closing this channel so all senders will no longer able to send messages.
@@ -610,9 +778,16 @@ impl<T> Chan<T> {
             return Err(ChanError::Closed);
         }
 
-        if self.flag() == RECV_ONLY {
+        let flag = self.flag();
+
+        if flag == RECV_ONLY {
             return Err(ChanError::RecvOnly);
         }
+        if flag == CLOSE_WAIT {
+            return Err(ChanError::Closing);
+        }
+
+        self.init_sender();
 
         if let Some(size) = self.inner.size {
             if self.len() >= size {
@@ -620,7 +795,7 @@ impl<T> Chan<T> {
             }
         }
 
-        let (_last_pop_time, queue, _wakers)=
+        let sender =
             match self.sender() {
                 Some(v) => v,
                 _ => {
@@ -628,7 +803,13 @@ impl<T> Chan<T> {
                 }
             };
 
-        queue.push(val);
+        let (_last_pop_time, pipeline, _wakers) = &*sender;
+
+        if pipeline.ordering() != self.ordering() {
+            return Err(ChanError::PipelineOrderingMismatched);
+        }
+
+        pipeline.push(val);
         let _ = self.inner.len.fetch_update(
             Acquire,
             Acquire,
@@ -665,18 +846,18 @@ impl<T> Chan<T> {
     }
 
     #[inline]
-    fn sender(&self) -> Option<&(Atom<Instant>, Queue<T>, Queue<Waker>)> {
-        if let Some(ref sender) = self.maybe_sender {
-            Some(&*sender)
-        } else {
-            None
-        }
+    fn sender(&self) -> Option<ArcSender<T>> {
+        self.sender.get()
     }
 
     #[inline]
-    fn try_pop_from(&self, _id: &usize, sender: &Arc<(Atom<Instant>, Queue<T>, Queue<Waker>)>) -> Option<T> {
-        let (last_pop_time, queue, wakers) = &**sender;
-        if let Some(mut shared) = queue.pop() {
+    fn try_pop_from(&self, _id: &usize, sender: &ArcSender<T>) -> Result<T, ChanError> {
+        let (last_pop_time, pipeline, wakers) = &**sender;
+
+        if pipeline.ordering() != self.ordering() {
+            return Err(ChanError::PipelineOrderingMismatched);
+        }
+        if let Some(mut shared) = pipeline.pop() {
             #[cfg(test)]
             eprintln!("pop message from {_id}");
 
@@ -703,7 +884,7 @@ impl<T> Chan<T> {
                 #[cfg(test)]
                 eprintln!("(preferred) got message {entry:p} by shared.get_mut()");
 
-                return Some(unsafe { entry.take_inner() });
+                return Ok(unsafe { entry.take_inner() });
             } else {
                 let guard = Guard::new();
                 let ptr = shared.get_guarded_ptr(&guard).as_ptr();
@@ -712,24 +893,17 @@ impl<T> Chan<T> {
                 #[cfg(test)]
                 eprintln!("(less safe) got message {entry:p} by pointer deref cast");
 
-                return Some(unsafe { entry.take_inner() });
+                return Ok(unsafe { entry.take_inner() });
             }
         }
 
-        None
-    }
-
-    /// try receive message from this channel.
-    /// this is never blocking, if there is no message, it will returns ChanError::Empty.
-    #[inline]
-    pub fn try_recv(&self) -> Result<T, ChanError> {
-        self.try_recv_from().map(|x| { x.1 })
+        Err(ChanError::Empty)
     }
 
     /// try receive message (with Sender ID) from this channel.
     /// this is never blocking, if there is no message, it will returns ChanError::Empty.
     #[inline]
-    pub fn try_recv_from(&self) -> Result<(usize, T), ChanError> {
+    pub fn try_recv(&self) -> Result<(usize, T), ChanError> {
         if self.is_closed() {
             return Err(ChanError::Closed);
         }
@@ -739,7 +913,7 @@ impl<T> Chan<T> {
         }
 
         let guard = Guard::new();
-        let mut senders: Vec<(&usize, &Arc<(Atom<Instant>, Queue<T>, Queue<Waker>)>)> = self.inner.senders.iter(&guard).collect();
+        let mut senders: Vec<(&usize, &ArcSender<T>)> = self.inner.senders.iter(&guard).collect();
 
         // sender with smallest last-use-time will be first of order.
         senders.sort_unstable_by_key(|(_, v)| { v.0.get() }); // impl<T: Ord + ?Sized> Ord for Arc<T>
@@ -756,15 +930,22 @@ impl<T> Chan<T> {
         let ordering = self.ordering();
         for (id, sender) in senders.into_iter() {
             if ordering == ChanOrdering::Unordered {
-                if id == &self.id {
+                if id == self.id() {
                     // skip myself.
                     // so a thread both sending and receiving will only receive messages from other senders.
                     continue;
                 }
             }
 
-            if let Some(msg) = self.try_pop_from(id, sender) {
-                return Ok((*id, msg));
+            match self.try_pop_from(id, sender) {
+                Ok(msg) => {
+                    return Ok((*id, msg));
+                },
+                Err(err) => {
+                    if err != ChanError::Empty {
+                        return Err(err);
+                    }
+                }
             }
         }
 
@@ -777,13 +958,13 @@ impl<T> Chan<T> {
             id: self.id,
             flag: self.flag.clone(),
             inner: self.inner.clone(),
-            maybe_sender: self.maybe_sender.clone(),
+            sender: self.sender.clone(),
             dropped: self.dropped,
             avoid_drop: true, // do not close if destructor called
         }
     }
 
-    /// Asynchronous receive message from this channel
+    /// Asynchronous receive message (with Sender ID) from this channel
     #[inline]
     pub fn recv(&self) -> ChanRecv<T> {
         ChanRecv {
@@ -792,14 +973,14 @@ impl<T> Chan<T> {
         }
     }
 
-    /// Synchronous receive message from this channel:
+    /// Synchronous receive message (with Sender ID) from this channel:
     /// internally it calls `block_on(self.recv())`
     #[inline]
-    pub fn recv_blocking(&self) -> Result<T, ChanError> {
+    pub fn recv_blocking(&self) -> Result<(usize, T), ChanError> {
         block_on(self.recv(), None)
     }
 
-    /// Asynchronous receive message from this channel
+    /// Asynchronous receive message (with Sender ID) from this channel
     #[inline]
     pub fn recv_timeout(&self, timeout: Duration) -> ChanRecv<T> {
         let mut recv = self.recv();
@@ -807,10 +988,10 @@ impl<T> Chan<T> {
         recv
     }
 
-    /// Synchronous receive message from this channel:
-    /// internally it calls `block_on(self.recv())`
+    /// Synchronous receive message (with Sender ID) from this channel:
+    /// internally it calls `block_on(self.recv_timeout())`
     #[inline]
-    pub fn recv_timeout_blocking(&self, timeout: Duration) -> Result<T, ChanError> {
+    pub fn recv_timeout_blocking(&self, timeout: Duration) -> Result<(usize, T), ChanError> {
         block_on(self.recv_timeout(timeout), Some(timeout))
     }
 
@@ -833,12 +1014,14 @@ impl<T> Chan<T> {
 }
 
 /// NOTE: not tested WIP
+#[inline]
 pub(self) fn block_on<T>(fut: impl core::future::Future<Output=T>, interval: Option<Duration>) -> T {
     const DEFAULT_INTERVAL: Duration = Duration::new(3, 0);
     let interval = interval.unwrap_or(DEFAULT_INTERVAL);
 
     struct ThreadWaker(Thread);
     impl Wake for ThreadWaker {
+        #[inline]
         fn wake(self: Arc<Self>) {
             self.0.unpark();
         }
@@ -867,7 +1050,7 @@ pub struct ChanRecv<T: 'static> {
     timer: Option<(Instant, Duration)>,
 }
 impl<T> core::future::Future for ChanRecv<T> {
-    type Output = Result<T, ChanError>;
+    type Output = Result<(usize, T), ChanError>;
 
     #[inline]
     fn poll(
@@ -875,7 +1058,7 @@ impl<T> core::future::Future for ChanRecv<T> {
         ctx: &mut Context<'_>
     ) -> Poll<Self::Output> {
         match self.chan.try_recv() {
-            Ok(msg) => Poll::Ready(Ok(msg)),
+            Ok(info) => Poll::Ready(Ok(info)),
             Err(err) => {
                 if err == ChanError::Empty {
                     if let Some(ref timer) = self.timer {
@@ -913,13 +1096,16 @@ impl<T> Future for ChanWait<T> {
             return Poll::Ready(());
         }
 
-        let (_last_pop_time, queue, wakers) =
+        let sender = 
             match self.0.sender() {
                 Some(v) => v,
                 _ => {
                     return Poll::Ready(());
                 }
             };
+
+        let (_last_pop_time, queue, wakers) = &*sender;
+
         if queue.is_empty() {
             Poll::Ready(())
         } else {

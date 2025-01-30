@@ -333,17 +333,10 @@ impl<T: ?Sized> Atom<T> {
 
 impl<T: 'static + Sized> Atom<T> {
     /// update the provided value if any.
-    ///
-    /// ## <big>however, this is not checking the lifetime of T.</big>
-    ///
-    /// # <big>Safety</big>
-    /// `T::drop` can be run after the [`Atom`] is dropped,
-    /// therefore it is safe only if `T::drop` does not access short-lived data,
-    /// or [`core::mem::needs_drop`] is `false` for `T`.
     #[inline]
     pub fn update(
         &self,
-        f: impl FnMut(Option<Arc<T>>)->Option<T>
+        f: impl FnOnce(Option<Arc<T>>)->Option<T>
     ) -> (Option<Arc<T>>, Option<Arc<T>>) {
         unsafe { self.update_unchecked(f) }
     }
@@ -351,6 +344,17 @@ impl<T: 'static + Sized> Atom<T> {
 
 impl<T: 'static + ?Sized> Atom<T> {
     /// update the provided Arc-wrapped value if any.
+    #[inline]
+    pub fn update_arc(
+        &self,
+        f: impl FnOnce(Option<Arc<T>>)->Option<Arc<T>>
+    ) -> (Option<Arc<T>>, Option<Arc<T>>) {
+        unsafe { self.update_arc_unchecked(f) }
+    }
+}
+
+impl<T: Sized> Atom<T> {
+    /// update the provided value if any.
     ///
     /// ## <big>however, this is not checking the lifetime of T.</big>
     ///
@@ -359,41 +363,41 @@ impl<T: 'static + ?Sized> Atom<T> {
     /// therefore it is safe only if `T::drop` does not access short-lived data,
     /// or [`core::mem::needs_drop`] is `false` for `T`.
     #[inline]
-    pub fn update_arc(
-        &self,
-        f: impl FnMut(Option<Arc<T>>)->Option<Arc<T>>
-    ) -> (Option<Arc<T>>, Option<Arc<T>>) {
-        unsafe { self.update_arc_unchecked(f) }
-    }
-}
-
-impl<T: Sized> Atom<T> {
-    /// update the provided value if any.
-    #[inline]
     pub unsafe fn update_unchecked(
         &self,
-        mut f: impl FnMut(Option<Arc<T>>)->Option<T>
+        f: impl FnOnce(Option<Arc<T>>)->Option<T>
     ) -> (Option<Arc<T>>, Option<Arc<T>>) {
         let old = self.get();
         if let Some(new) = f(old.clone()) {
-            unsafe { self.set_unchecked(new); }
+            let new = unsafe { self.set_unchecked(new) };
+            (old, Some(new))
+        } else {
+            (old.clone(), old)
         }
-        (old, self.get())
     }
 }
 
 impl<T: ?Sized> Atom<T> {
     /// update the provided Arc-wrapped value if any.
+    ///
+    /// ## <big>however, this is not checking the lifetime of T.</big>
+    ///
+    /// # <big>Safety</big>
+    /// `T::drop` can be run after the [`Atom`] is dropped,
+    /// therefore it is safe only if `T::drop` does not access short-lived data,
+    /// or [`core::mem::needs_drop`] is `false` for `T`.
     #[inline]
     pub unsafe fn update_arc_unchecked(
         &self,
-        mut f: impl FnMut(Option<Arc<T>>)->Option<Arc<T>>
+        f: impl FnOnce(Option<Arc<T>>)->Option<Arc<T>>
     ) -> (Option<Arc<T>>, Option<Arc<T>>) {
         let old = self.get();
         if let Some(new) = f(old.clone()) {
-            unsafe { self.set_arc_unchecked(new); }
+            unsafe { self.set_arc_unchecked(new.clone()); }
+            (old, Some(new))
+        } else {
+            (old.clone(), old)
         }
-        (old, self.get())
     }
 }
 
