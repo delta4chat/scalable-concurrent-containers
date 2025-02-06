@@ -753,10 +753,7 @@ where
     where
         Q: Equivalent<K> + Hash + ?Sized,
     {
-        self.read_entry(key, self.hash(key), &mut (), guard)
-            .ok()
-            .flatten()
-            .map(|(_, v)| v)
+        self.peek_entry(key, self.hash(key), guard).map(|(_, v)| v)
     }
 
     /// Peeks a key-value pair without acquiring locks.
@@ -780,9 +777,7 @@ where
         Q: Equivalent<K> + Hash + ?Sized,
     {
         let guard = Guard::new();
-        self.read_entry(key, self.hash(key), &mut (), &guard)
-            .ok()
-            .flatten()
+        self.peek_entry(key, self.hash(key), &guard)
             .map(|(k, v)| reader(k, v))
     }
 
@@ -1198,6 +1193,26 @@ where
     #[inline]
     fn default() -> Self {
         Self::with_hasher(H::default())
+    }
+}
+
+impl<K, V, H> FromIterator<(K, V)> for HashIndex<K, V, H>
+where
+    K: 'static + Clone + Eq + Hash,
+    V: 'static + Clone,
+    H: BuildHasher + Default,
+{
+    #[inline]
+    fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
+        let into_iter = iter.into_iter();
+        let hashindex = Self::with_capacity_and_hasher(
+            Self::capacity_from_size_hint(into_iter.size_hint()),
+            H::default(),
+        );
+        into_iter.for_each(|e| {
+            let _result = hashindex.insert(e.0, e.1);
+        });
+        hashindex
     }
 }
 

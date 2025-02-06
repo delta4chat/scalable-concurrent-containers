@@ -469,10 +469,9 @@ where
     where
         Q: Equivalent<K> + Hash + ?Sized,
     {
-        self.read_entry(key, self.hash(key), &mut (), &Guard::new())
+        self.read_entry(key, self.hash(key), reader, &mut (), &Guard::new())
             .ok()
             .flatten()
-            .map(|(k, v)| reader(k, v))
     }
 
     /// Reads a key-value pair.
@@ -490,7 +489,11 @@ where
     /// let future_read = hashcache.read_async(&11, |_, v| *v);
     /// ```
     #[inline]
-    pub async fn read_async<Q, R, F: FnOnce(&K, &V) -> R>(&self, key: &Q, reader: F) -> Option<R>
+    pub async fn read_async<Q, R, F: FnOnce(&K, &V) -> R>(
+        &self,
+        key: &Q,
+        mut reader: F,
+    ) -> Option<R>
     where
         Q: Equivalent<K> + Hash + ?Sized,
     {
@@ -498,8 +501,9 @@ where
         loop {
             let mut async_wait = AsyncWait::default();
             let mut async_wait_pinned = Pin::new(&mut async_wait);
-            if let Ok(result) = self.read_entry(key, hash, &mut async_wait_pinned, &Guard::new()) {
-                return result.map(|(k, v)| reader(k, v));
+            match self.read_entry(key, hash, reader, &mut async_wait_pinned, &Guard::new()) {
+                Ok(result) => return result,
+                Err(f) => reader = f,
             }
             async_wait_pinned.await;
         }
@@ -1109,8 +1113,9 @@ where
 
     /// Creates an empty [`HashCache`] with the specified capacity.
     ///
-    /// The supplied minimum and maximum capacity values are adjusted to any suitable
-    /// `power-of-two` values that are close to them.
+    /// The supplied minimum and maximum capacity values are adjusted to power-of-two values equal
+    /// to or larger than the provided values and `64` with one exception; if `0` is specified as
+    /// the minimum capacity, the minimum capacity of the `HashCache` becomes `0`.
     ///
     /// # Examples
     ///
@@ -1121,6 +1126,10 @@ where
     ///
     /// let result = hashcache.capacity();
     /// assert_eq!(result, 1024);
+    ///
+    /// let hashcache: HashCache<u64, u32> = HashCache::with_capacity(0, 0);
+    /// let result = hashcache.capacity_range();
+    /// assert_eq!(result, 0..=64);
     /// ```
     #[inline]
     #[must_use]
@@ -1189,6 +1198,27 @@ where
                 // remain outside the lifetime of the `HashCache`.
                 a.drop_in_place()
             });
+    }
+}
+
+impl<K, V, H> FromIterator<(K, V)> for HashCache<K, V, H>
+where
+    K: Eq + Hash,
+    H: BuildHasher + Default,
+{
+    #[inline]
+    fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
+        let into_iter = iter.into_iter();
+        let size_hint = into_iter.size_hint();
+        let hashcache = Self::with_capacity_and_hasher(
+            size_hint.0,
+            Self::capacity_from_size_hint(size_hint),
+            H::default(),
+        );
+        into_iter.for_each(|e| {
+            let _result = hashcache.put(e.0, e.1);
+        });
+        hashcache
     }
 }
 

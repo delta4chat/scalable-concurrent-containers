@@ -12,7 +12,9 @@ mod hashmap_test {
     use std::rc::Rc;
     use std::sync::atomic::Ordering::{Acquire, Relaxed, Release};
     use std::sync::atomic::{AtomicU64, AtomicUsize};
-    use std::sync::Arc;
+    use std::sync::{Arc, Barrier};
+    use std::thread;
+    use std::time::Duration;
     use tokio::sync::Barrier as AsyncBarrier;
 
     static_assertions::assert_not_impl_all!(HashMap<Rc<String>, Rc<String>>: Send, Sync);
@@ -152,6 +154,50 @@ mod hashmap_test {
             hashmap.clear();
             assert_eq!(INST_CNT.load(Relaxed), 0);
         }
+    }
+
+    #[cfg_attr(miri, ignore)]
+    #[test]
+    fn read_remove() {
+        let hashmap = Arc::new(HashMap::<String, Vec<u8>>::new());
+        let barrier = Arc::new(Barrier::new(2));
+
+        hashmap.insert("first".into(), vec![123]).unwrap();
+
+        let hashmap_clone = hashmap.clone();
+        let barrier_clone = barrier.clone();
+        let task = thread::spawn(move || {
+            hashmap_clone.read("first".into(), |_key, value| {
+                {
+                    let first_item = value.get(0);
+                    assert_eq!(first_item.unwrap(), &123_u8);
+                }
+                barrier_clone.wait();
+                thread::sleep(Duration::from_millis(16));
+                {
+                    let first_item = value.get(0);
+                    assert_eq!(first_item.unwrap(), &123_u8);
+                }
+            });
+        });
+
+        barrier.wait();
+        assert!(hashmap.remove("first".into()).is_some());
+        assert!(task.join().is_ok());
+    }
+
+    #[test]
+    fn from_iter() {
+        static INST_CNT: AtomicUsize = AtomicUsize::new(0);
+
+        let workload_size = 256;
+        let hashmap = (0..workload_size)
+            .into_iter()
+            .map(|k| (k / 2, R::new(&INST_CNT)))
+            .collect::<HashMap<usize, R>>();
+        assert_eq!(hashmap.len(), workload_size / 2);
+        hashmap.clear();
+        assert_eq!(INST_CNT.load(Relaxed), 0);
     }
 
     #[cfg_attr(miri, ignore)]
@@ -963,6 +1009,24 @@ mod hashindex_test {
     }
 
     #[test]
+    fn from_iter() {
+        static INST_CNT: AtomicUsize = AtomicUsize::new(0);
+
+        let workload_size = 256;
+        let hashindex = (0..workload_size)
+            .into_iter()
+            .map(|k| (k / 2, R::new(&INST_CNT)))
+            .collect::<HashIndex<usize, R>>();
+        assert_eq!(hashindex.len(), workload_size / 2);
+        drop(hashindex);
+
+        while INST_CNT.load(Relaxed) != 0 {
+            Guard::new().accelerate();
+            thread::yield_now();
+        }
+    }
+
+    #[test]
     fn clone() {
         static INST_CNT: AtomicUsize = AtomicUsize::new(0);
         let hashindex: HashIndex<usize, R> = HashIndex::default();
@@ -1506,6 +1570,16 @@ mod hashset_test {
         assert!(hashset.insert(EqTest("HELLO".to_owned(), 1)).is_ok());
         assert!(!hashset.contains("NO"));
         assert!(hashset.contains("HELLO"));
+    }
+
+    #[test]
+    fn from_iter() {
+        let workload_size = 256;
+        let hashset = (0..workload_size)
+            .into_iter()
+            .map(|k| k / 2)
+            .collect::<HashSet<usize>>();
+        assert_eq!(hashset.len(), workload_size / 2);
     }
 
     #[test]
@@ -2809,6 +2883,20 @@ mod bag_test {
     }
 
     #[test]
+    fn from_iter() {
+        static INST_CNT: AtomicUsize = AtomicUsize::new(0);
+
+        let workload_size = 16;
+        let bag = (0..workload_size)
+            .into_iter()
+            .map(|_| R::new(&INST_CNT))
+            .collect::<Bag<R>>();
+        assert_eq!(bag.len(), workload_size);
+        drop(bag);
+        assert_eq!(INST_CNT.load(Relaxed), 0);
+    }
+
+    #[test]
     fn into_iter() {
         static INST_CNT: AtomicUsize = AtomicUsize::new(0);
         for workload_size in [2, 18, 32, 40, 120] {
@@ -2980,6 +3068,24 @@ mod queue_test {
         assert_eq!(queue_clone.pop().map(|e| **e), Some(3));
         assert_eq!(queue_clone.pop().map(|e| **e), Some(1));
         assert!(queue_clone.pop().is_none());
+    }
+
+    #[test]
+    fn from_iter() {
+        static INST_CNT: AtomicUsize = AtomicUsize::new(0);
+
+        let workload_size = 16;
+        let queue = (0..workload_size)
+            .into_iter()
+            .map(|i| R::new(&INST_CNT, i, i))
+            .collect::<Queue<R>>();
+        assert_eq!(queue.len(), workload_size);
+        drop(queue);
+
+        while INST_CNT.load(Relaxed) != 0 {
+            Guard::new().accelerate();
+            thread::yield_now();
+        }
     }
 
     #[test]
@@ -3169,6 +3275,16 @@ mod stack_test {
         assert_eq!(stack_clone.pop().map(|e| **e), Some(3));
         assert_eq!(stack_clone.pop().map(|e| **e), Some(37));
         assert!(stack_clone.pop().is_none());
+    }
+
+    #[test]
+    fn from_iter() {
+        let workload_size = 16;
+        let stack = (0..workload_size).into_iter().collect::<Stack<usize>>();
+        assert_eq!(stack.len(), workload_size);
+        for i in (0..workload_size).rev() {
+            assert_eq!(stack.pop().map(|e| **e), Some(i));
+        }
     }
 
     #[cfg_attr(miri, ignore)]
