@@ -925,7 +925,7 @@ where
                     rollback_defer.cancel();
                     return Ok(InsertResult::Full(key, val));
                 }
-            };
+            }
 
             // Mark the full leaf deleted before making the new one reachable and updatable.
             //
