@@ -151,9 +151,9 @@ impl<T: ?Sized> Default for Atom<T> {
 impl<T: ?Sized> Atom<T> {
     /// initialize Atom with no value.
     #[inline]
-    pub fn init() -> Self {
+    pub const fn init() -> Self {
         Self {
-            value: AtomicShared::default(),
+            value: AtomicShared::null(),
         }
     }
 }
