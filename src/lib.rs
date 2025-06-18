@@ -14,8 +14,8 @@ pub use exit_guard::{ExitGuard, Defer};
 pub mod atom;
 pub use atom::Atom;
 
-pub mod chan;
-pub use chan::Chan;
+//pub mod chan;
+//pub use chan::Chan;
 
 pub mod hash_cache;
 pub use hash_cache::HashCache;
