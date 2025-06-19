@@ -1,4 +1,4 @@
-/// Atom is a wrapper of [`sdd::AtomicShared`] for easy to use it.
+//! Atom is a wrapper of [`sdd::AtomicShared`] for easy to use it.
 
 use super::ebr::{AtomicShared, Guard, Shared, Tag};
 
