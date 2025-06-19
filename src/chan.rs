@@ -458,7 +458,7 @@ impl<T> Drop for Chan<T> {
         }
 
         #[cfg(test)]
-        eprintln!("called drop: id={}", self.id(l));
+        eprintln!("called drop: id={}", self.id());
 
         if self.dropped {
             return;
@@ -1132,7 +1132,7 @@ mod test {
         let ch: Chan<u16> = Default::default();
         let other_ch = ch.clone();
         other_ch.send(1).unwrap();
-        assert_eq!(ch.try_recv(), Ok(1))
+        assert_eq!(ch.try_recv(), Ok((*(other_ch.id()), 1)))
     }
 
     #[test]

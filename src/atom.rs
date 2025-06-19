@@ -1,10 +1,12 @@
-//! Atom elements
+/// Atom is a wrapper of [`sdd::AtomicShared`] for easy to use it.
 
 use super::ebr::{AtomicShared, Guard, Shared, Tag};
 
 use core::sync::atomic::Ordering::{AcqRel, Acquire};
 
 /// Atom is just a wrapper of [`sdd::AtomicShared`] for easy to use it.
+/// * this does not implements Clone due to AtomicShared::clone is deep copy, if you need to share it between multi threads, please Arc-wrapping it, or use `Box::leak` (static lifetime) to get a Clone-able reference.
+/// * for making this type can be constructed in const context, so it does not use Arc to implements Clone.
 pub struct Atom<T> {
     inner: AtomicShared<T>,
 }
@@ -236,15 +238,6 @@ impl<T> Atom<T> {
     }
 }
 
-impl<T> Clone for Atom<T> {
-    #[inline]
-    fn clone(&self) -> Self {
-        Self {
-            inner: Clone::clone(&self.inner),
-        }
-    }
-}
-
 impl<T: 'static> Atom<T> {
     /// set Atom to provided value. returns the Shared-wrapped-value of you provided value.
     #[inline]
@@ -335,7 +328,7 @@ impl<T: 'static> Atom<T> {
     /// * provided callback will be called for each iteration of CAS loop. if callback returns Err, it means cancels this update operation.
     /// * doing CAS loop until success or cancelled, so it's expected multi-calls to provided closure or function.
     /// * if CAS successfully, return submitted update (old_value, new_value) pair.
-    /// WARNING: the execute time of this operation can be took long time due to there is no timeout.
+    /// WARNING: the execute time of this operation can took long time due to there is no timeout.
     #[inline]
     pub fn update<E>(
         &self,
